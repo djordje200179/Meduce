@@ -1,5 +1,3 @@
-github.com/djordje200179/extendedlibrary/mapreduce v0.2.0 h1:MOIduJgOfJLvmxFJF8D1QTsZYwm849v7pEYEPIv1wsw=
-github.com/djordje200179/extendedlibrary/mapreduce v0.2.0/go.mod h1:pjKEtfgG2nrGjiHkfTt+QbNCQxqFi8SId48FDZnUgWI=
 github.com/djordje200179/extendedlibrary/misc v1.0.0 h1:MnAmHVQup2jLCWE9sLr6Eva9v028C0BDINW1XgJyAXc=
 github.com/djordje200179/extendedlibrary/misc v1.0.0/go.mod h1:Q4KGUaRgNgEL/v/h6HmFkg2u8ZA60zHlsg1g9i0XiFQ=
 golang.org/x/exp v0.0.0-20230424174712-0ee363d48fb1 h1:7ewEue0BB5yqldKyRBV5KoDD2uiBiQpTA6DxObvjj/M=
