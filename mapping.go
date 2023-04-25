@@ -16,9 +16,9 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) mapData() {
 
 	for i := 0; i < threadsCount; i++ {
 		go mappingThread(
-			process.keyComparator,
-			process.mapper, process.reducer,
-			process.dataSource,
+			process.KeyComparator,
+			process.Mapper, process.Reducer,
+			process.DataSource,
 			&keysArrays[i], &valuesArrays[i],
 			&allMappersFinished,
 		)
@@ -26,5 +26,5 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) mapData() {
 
 	allMappersFinished.Wait()
 
-	process.mappedKeys, process.mappedValues = mergeMappedData(process.keyComparator, keysArrays, valuesArrays)
+	process.mappedKeys, process.mappedValues = mergeMappedData(process.KeyComparator, keysArrays, valuesArrays)
 }

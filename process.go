@@ -8,19 +8,19 @@ import (
 )
 
 type Process[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
-	keyComparator functions.Comparator[KeyOut]
+	KeyComparator functions.Comparator[KeyOut]
 
-	mapper    Mapper[KeyIn, ValueIn, KeyOut, ValueOut]
-	reducer   Reducer[KeyOut, ValueOut]
-	finalizer Finalizer[KeyOut, ValueOut]
+	Mapper    Mapper[KeyIn, ValueIn, KeyOut, ValueOut]
+	Reducer   Reducer[KeyOut, ValueOut]
+	Finalizer Finalizer[KeyOut, ValueOut]
 
-	dataSource Source[KeyIn, ValueIn]
+	DataSource Source[KeyIn, ValueIn]
 
 	mappedKeys   []KeyOut
 	mappedValues []ValueOut
 
 	collectingMutex sync.Mutex
-	collector       Collector[KeyOut, ValueOut]
+	Collector       Collector[KeyOut, ValueOut]
 
 	finishSignal sync.WaitGroup
 }
@@ -33,15 +33,15 @@ func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](
 	//output = bufio.NewWriter(output)
 
 	process := &Process[KeyIn, ValueIn, KeyOut, ValueOut]{
-		keyComparator: keyComparator,
+		KeyComparator: keyComparator,
 
-		mapper:    mapper,
-		reducer:   reducer,
-		finalizer: finalizer,
+		Mapper:    mapper,
+		Reducer:   reducer,
+		Finalizer: finalizer,
 
-		dataSource: dataSource,
+		DataSource: dataSource,
 
-		collector: collector,
+		Collector: collector,
 	}
 
 	return process
@@ -58,7 +58,7 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) Run() {
 	process.mapData()
 	process.reduceData()
 
-	process.collector.Finalize()
+	process.Collector.Finalize()
 	process.finishSignal.Done()
 }
 
@@ -66,5 +66,5 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) WaitToFinish() Collect
 	process.finishSignal.Add(1)
 	process.finishSignal.Wait()
 
-	return process.collector
+	return process.Collector
 }

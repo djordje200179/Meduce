@@ -14,14 +14,14 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) reduceData() {
 	readyDataPool := make(chan reducingDataGroup[KeyOut, ValueOut], 100*threadsCount)
 
 	go reducingDataGenerationThread(
-		process.keyComparator,
+		process.KeyComparator,
 		process.mappedKeys, process.mappedValues,
 		readyDataPool,
 	)
 
 	for i := 0; i < threadsCount; i++ {
 		go reducingThread(
-			process.reducer, process.finalizer,
+			process.Reducer, process.Finalizer,
 			readyDataPool,
 			process.collectData, &barrier,
 		)
@@ -32,6 +32,6 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) reduceData() {
 
 func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) collectData(key KeyOut, value ValueOut) {
 	process.collectingMutex.Lock()
-	process.collector.Collect(key, value)
+	process.Collector.Collect(key, value)
 	process.collectingMutex.Unlock()
 }
