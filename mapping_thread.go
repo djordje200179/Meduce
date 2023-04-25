@@ -1,7 +1,6 @@
 package meduce
 
 import (
-	"github.com/djordje200179/extendedlibrary/misc"
 	"github.com/djordje200179/extendedlibrary/misc/functions"
 	"github.com/djordje200179/extendedlibrary/misc/functions/comparison"
 	"sort"
@@ -19,13 +18,7 @@ func mappingThread[KeyIn, ValueIn, KeyOut, ValueOut any](
 		keyComparator: keyComparator,
 	}
 
-	for {
-		var entry misc.Pair[KeyIn, ValueIn]
-		entry, ok := <-dataSource
-		if !ok {
-			break
-		}
-
+	for entry := range dataSource {
 		mapper(entry.First, entry.Second, mappedData.append)
 	}
 

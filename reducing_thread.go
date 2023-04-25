@@ -16,13 +16,7 @@ func reducingThread[KeyOut, ValueOut any](
 	dataPool <-chan reducingDataGroup[KeyOut, ValueOut],
 	collect func(key KeyOut, value ValueOut), finishSignal *sync.WaitGroup,
 ) {
-	for {
-		var groupData reducingDataGroup[KeyOut, ValueOut]
-		groupData, ok := <-dataPool
-		if !ok {
-			break
-		}
-
+	for groupData := range dataPool {
 		var reducedValue ValueOut
 		if len(groupData.values) == 1 {
 			reducedValue = groupData.values[0]
