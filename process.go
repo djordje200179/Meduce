@@ -58,6 +58,7 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) Run() {
 	process.mapData()
 	process.reduceData()
 
+	process.collector.Finalize()
 	process.finishSignal.Done()
 }
 
