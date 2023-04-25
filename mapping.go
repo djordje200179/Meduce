@@ -8,23 +8,23 @@ import (
 func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) mapData() {
 	threadsCount := runtime.NumCPU()
 
-	var barrier sync.WaitGroup
-	barrier.Add(threadsCount)
+	var allMappersFinished sync.WaitGroup
+	allMappersFinished.Add(threadsCount)
 
 	keysArrays := make([][]KeyOut, threadsCount)
 	valuesArrays := make([][]ValueOut, threadsCount)
 
 	for i := 0; i < threadsCount; i++ {
-		go mapData(
+		go mappingThread(
 			process.keyComparator,
 			process.mapper, process.reducer,
 			process.dataSource,
 			&keysArrays[i], &valuesArrays[i],
-			&barrier,
+			&allMappersFinished,
 		)
 	}
 
-	barrier.Wait()
+	allMappersFinished.Wait()
 
 	process.mappedKeys, process.mappedValues = mergeMappedData(process.keyComparator, keysArrays, valuesArrays)
 }

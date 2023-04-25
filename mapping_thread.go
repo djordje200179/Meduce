@@ -8,14 +8,14 @@ import (
 	"sync"
 )
 
-func mapData[KeyIn, ValueIn, KeyOut, ValueOut any](
+func mappingThread[KeyIn, ValueIn, KeyOut, ValueOut any](
 	keyComparator functions.Comparator[KeyOut],
 	mapper Mapper[KeyIn, ValueIn, KeyOut, ValueOut], combiner Reducer[KeyOut, ValueOut],
 	dataSource Source[KeyIn, ValueIn],
 	keysPlace *[]KeyOut, valuesPlace *[]ValueOut,
 	finishSignal *sync.WaitGroup,
 ) {
-	mappedData := threadMappingData[KeyOut, ValueOut]{
+	mappedData := mappingThreadData[KeyOut, ValueOut]{
 		keyComparator: keyComparator,
 	}
 
@@ -39,31 +39,31 @@ func mapData[KeyIn, ValueIn, KeyOut, ValueOut any](
 	finishSignal.Done()
 }
 
-type threadMappingData[KeyOut, ValueOut any] struct {
+type mappingThreadData[KeyOut, ValueOut any] struct {
 	keyComparator functions.Comparator[KeyOut]
 
 	keys   []KeyOut
 	values []ValueOut
 }
 
-func (data *threadMappingData[KeyOut, ValueOut]) append(key KeyOut, value ValueOut) {
+func (data *mappingThreadData[KeyOut, ValueOut]) append(key KeyOut, value ValueOut) {
 	data.keys = append(data.keys, key)
 	data.values = append(data.values, value)
 }
-func (data *threadMappingData[KeyOut, ValueOut]) Len() int {
+func (data *mappingThreadData[KeyOut, ValueOut]) Len() int {
 	return len(data.keys)
 }
 
-func (data *threadMappingData[KeyOut, ValueOut]) Less(i, j int) bool {
+func (data *mappingThreadData[KeyOut, ValueOut]) Less(i, j int) bool {
 	return data.keyComparator(data.keys[i], data.keys[j]) == comparison.FirstSmaller
 }
 
-func (data *threadMappingData[KeyOut, ValueOut]) Swap(i, j int) {
+func (data *mappingThreadData[KeyOut, ValueOut]) Swap(i, j int) {
 	data.keys[i], data.keys[j] = data.keys[j], data.keys[i]
 	data.values[i], data.values[j] = data.values[j], data.values[i]
 }
 
-func (data *threadMappingData[KeyOut, ValueOut]) combine(reducer Reducer[KeyOut, ValueOut]) ([]KeyOut, []ValueOut) {
+func (data *mappingThreadData[KeyOut, ValueOut]) combine(reducer Reducer[KeyOut, ValueOut]) ([]KeyOut, []ValueOut) {
 	if len(data.keys) == 0 {
 		return nil, nil
 	}
