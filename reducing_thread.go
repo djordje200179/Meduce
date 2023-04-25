@@ -11,7 +11,7 @@ func reduceData[KeyOut, ValueOut any](
 ) {
 	reducedValue := reducer(key, values)
 	if finalizer != nil {
-		reducedValue = finalizer(key, reducedValue)
+		finalizer(key, &reducedValue)
 	}
 
 	writeOnlyData(write, finishSignal, key, reducedValue)
