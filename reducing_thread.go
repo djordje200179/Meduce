@@ -4,24 +4,30 @@ import (
 	"sync"
 )
 
-func reduceData[KeyOut, ValueOut any](
-	reducer Reducer[KeyOut, ValueOut], finalizer Finalizer[KeyOut, ValueOut],
-	write func(key KeyOut, value ValueOut), finishSignal *sync.WaitGroup,
-	key KeyOut, values []ValueOut,
-) {
-	reducedValue := reducer(key, values)
-	if finalizer != nil {
-		finalizer(key, &reducedValue)
-	}
-
-	writeOnlyData(write, finishSignal, key, reducedValue)
+type reducingGroupData[KeyOut, ValueOut any] struct {
+	key    KeyOut
+	values []ValueOut
 }
 
-func writeOnlyData[KeyOut, ValueOut any](
+func reduceData[KeyOut, ValueOut any](
+	reducer Reducer[KeyOut, ValueOut], finalizer Finalizer[KeyOut, ValueOut],
+	dataPool chan reducingGroupData[KeyOut, ValueOut],
 	write func(key KeyOut, value ValueOut), finishSignal *sync.WaitGroup,
-	key KeyOut, value ValueOut,
 ) {
-	write(key, value)
+	for {
+		var groupData reducingGroupData[KeyOut, ValueOut]
+		groupData, ok := <-dataPool
+		if !ok {
+			break
+		}
+
+		reducedValue := reducer(groupData.key, groupData.values)
+		if finalizer != nil {
+			finalizer(groupData.key, &reducedValue)
+		}
+
+		write(groupData.key, reducedValue)
+	}
 
 	finishSignal.Done()
 }

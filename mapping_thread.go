@@ -22,7 +22,6 @@ func mapData[KeyIn, ValueIn, KeyOut, ValueOut any](
 	for {
 		var entry misc.Pair[KeyIn, ValueIn]
 		entry, ok := <-dataSource
-
 		if !ok {
 			break
 		}
