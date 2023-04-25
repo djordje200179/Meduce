@@ -1,9 +1,7 @@
 package meduce
 
 import (
-	"fmt"
 	"github.com/djordje200179/extendedlibrary/misc/functions/comparison"
-	"log"
 	"sync"
 )
 
@@ -29,7 +27,7 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) reduceData() {
 
 		if firstIndex == lastIndex {
 			value := process.mappedValues[firstIndex]
-			go writeOnlyData(process.writeData, &barrier, lastKey, value)
+			go writeOnlyData(process.collectData, &barrier, lastKey, value)
 
 			continue
 		}
@@ -37,7 +35,7 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) reduceData() {
 		validValues := process.mappedValues[firstIndex : lastIndex+1]
 		go reduceData(
 			process.reducer, process.finalizer,
-			process.writeData, &barrier,
+			process.collectData, &barrier,
 			lastKey, validValues,
 		)
 	}
@@ -45,11 +43,8 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) reduceData() {
 	barrier.Wait()
 }
 
-func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) writeData(key KeyOut, value ValueOut) {
-	process.mutex.Lock()
-	_, err := fmt.Fprintf(process.dataWriter, "%v: %v\n", key, value)
-	if err != nil {
-		log.Panic(err)
-	}
-	process.mutex.Unlock()
+func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) collectData(key KeyOut, value ValueOut) {
+	process.collectingMutex.Lock()
+	process.collector.Collect(key, value)
+	process.collectingMutex.Unlock()
 }

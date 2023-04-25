@@ -4,7 +4,6 @@ import (
 	"github.com/djordje200179/extendedlibrary/misc/functions"
 	"github.com/djordje200179/extendedlibrary/misc/functions/comparison"
 	"golang.org/x/exp/constraints"
-	"io"
 	"sync"
 )
 
@@ -17,20 +16,19 @@ type Process[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
 
 	dataSource Source[KeyIn, ValueIn]
 
-	mutex sync.Mutex
-
 	mappedKeys   []KeyOut
 	mappedValues []ValueOut
 
-	dataWriter   io.Writer
+	collectingMutex sync.Mutex
+	collector       Collector[KeyOut, ValueOut]
+
 	finishSignal sync.WaitGroup
 }
 
 func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](
 	keyComparator functions.Comparator[KeyOut],
 	mapper Mapper[KeyIn, ValueIn, KeyOut, ValueOut], reducer Reducer[KeyOut, ValueOut], finalizer Finalizer[KeyOut, ValueOut],
-	output io.Writer,
-	dataSource Source[KeyIn, ValueIn],
+	dataSource Source[KeyIn, ValueIn], collector Collector[KeyOut, ValueOut],
 ) *Process[KeyIn, ValueIn, KeyOut, ValueOut] {
 	//output = bufio.NewWriter(output)
 
@@ -43,7 +41,7 @@ func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](
 
 		dataSource: dataSource,
 
-		dataWriter: output,
+		collector: collector,
 	}
 
 	return process
@@ -51,10 +49,9 @@ func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](
 
 func NewProcessWithOrderedKeys[KeyIn, ValueIn any, KeyOut constraints.Ordered, ValueOut any](
 	mapper Mapper[KeyIn, ValueIn, KeyOut, ValueOut], reducer Reducer[KeyOut, ValueOut], finalizer Finalizer[KeyOut, ValueOut],
-	output io.Writer,
-	dataSource Source[KeyIn, ValueIn],
+	dataSource Source[KeyIn, ValueIn], collector Collector[KeyOut, ValueOut],
 ) *Process[KeyIn, ValueIn, KeyOut, ValueOut] {
-	return NewProcess(comparison.Ascending[KeyOut], mapper, reducer, finalizer, output, dataSource)
+	return NewProcess(comparison.Ascending[KeyOut], mapper, reducer, finalizer, dataSource, collector)
 }
 
 func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) Run() {
@@ -64,7 +61,9 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) Run() {
 	process.finishSignal.Done()
 }
 
-func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) WaitToFinish() {
+func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) WaitToFinish() Collector[KeyOut, ValueOut] {
 	process.finishSignal.Add(1)
 	process.finishSignal.Wait()
+
+	return process.collector
 }
