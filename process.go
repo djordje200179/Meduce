@@ -4,10 +4,15 @@ import (
 	"github.com/djordje200179/extendedlibrary/misc/functions"
 	"github.com/djordje200179/extendedlibrary/misc/functions/comparison"
 	"golang.org/x/exp/constraints"
+	"log"
 	"sync"
 )
 
+var nextUid int = 0
+
 type Process[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
+	uid int
+
 	KeyComparator functions.Comparator[KeyOut]
 
 	Mapper    Mapper[KeyIn, ValueIn, KeyOut, ValueOut]
@@ -33,6 +38,8 @@ func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](
 	//output = bufio.NewWriter(output)
 
 	process := &Process[KeyIn, ValueIn, KeyOut, ValueOut]{
+		uid: nextUid,
+
 		KeyComparator: keyComparator,
 
 		Mapper:    mapper,
@@ -44,6 +51,10 @@ func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](
 		Collector: collector,
 	}
 
+	nextUid++
+
+	process.finishSignal.Add(1)
+
 	return process
 }
 
@@ -54,16 +65,24 @@ func NewProcessWithOrderedKeys[KeyIn, ValueIn any, KeyOut constraints.Ordered, V
 	return NewProcess(comparison.Ascending[KeyOut], mapper, reducer, finalizer, dataSource, collector)
 }
 
-func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) Run() {
+func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) Run(verbose bool) {
+	if verbose {
+		log.Printf("Process %d: started", process.uid)
+	}
 	process.mapData()
+	if verbose {
+		log.Printf("Process %d: mappings finished", process.uid)
+	}
 	process.reduceData()
+	if verbose {
+		log.Printf("Process %d: reductions finished", process.uid)
+	}
 
 	process.Collector.Finalize()
 	process.finishSignal.Done()
 }
 
 func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) WaitToFinish() Collector[KeyOut, ValueOut] {
-	process.finishSignal.Add(1)
 	process.finishSignal.Wait()
 
 	return process.Collector
