@@ -18,8 +18,8 @@ func mappingThread[KeyIn, ValueIn, KeyOut, ValueOut any](
 		keyComparator: keyComparator,
 	}
 
-	for entry := range dataSource {
-		mapper(entry.First, entry.Second, mappedData.append)
+	for pair := range dataSource {
+		mapper(pair.First, pair.Second, mappedData.append)
 	}
 
 	sort.Sort(&mappedData)
