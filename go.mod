@@ -1,6 +1,6 @@
 module github.com/djordje200179/meduce
 
-go 1.18
+go 1.20
 
 require (
 	github.com/djordje200179/extendedlibrary/misc v1.0.0
