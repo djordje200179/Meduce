@@ -8,11 +8,7 @@ import (
 	"sync"
 )
 
-var nextUid int = 0
-
-type Process[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
-	uid int
-
+type Config[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
 	KeyComparator   functions.Comparator[KeyOut]
 	ValueComparator functions.Comparator[ValueOut]
 
@@ -21,45 +17,32 @@ type Process[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
 	Finalizer Finalizer[KeyOut, ValueOut]
 	Filter    Filter[KeyOut, ValueOut]
 
-	DataSource Source[KeyIn, ValueIn]
+	Source    Source[KeyIn, ValueIn]
+	Collector Collector[KeyOut, ValueOut]
+}
+
+var nextUid = 0
+
+type Process[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
+	uid int
+
+	Config[KeyIn, ValueIn, KeyOut, ValueOut]
 
 	mappedKeys   []KeyOut
 	mappedValues []ValueOut
 
 	collectingMutex sync.Mutex
-	Collector       Collector[KeyOut, ValueOut]
 
 	finishSignal sync.WaitGroup
 }
 
-func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](
-	keyComparator functions.Comparator[KeyOut],
-	valueComparator functions.Comparator[ValueOut],
-
-	mapper Mapper[KeyIn, ValueIn, KeyOut, ValueOut],
-	reducer Reducer[KeyOut, ValueOut],
-	finalizer Finalizer[KeyOut, ValueOut],
-	filter Filter[KeyOut, ValueOut],
-
-	dataSource Source[KeyIn, ValueIn],
-	collector Collector[KeyOut, ValueOut],
-) *Process[KeyIn, ValueIn, KeyOut, ValueOut] {
+func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](config Config[KeyIn, ValueIn, KeyOut, ValueOut]) *Process[KeyIn, ValueIn, KeyOut, ValueOut] {
 	//output = bufio.NewWriter(output)
 
 	process := &Process[KeyIn, ValueIn, KeyOut, ValueOut]{
 		uid: nextUid,
 
-		KeyComparator:   keyComparator,
-		ValueComparator: valueComparator,
-
-		Mapper:    mapper,
-		Reducer:   reducer,
-		Finalizer: finalizer,
-		Filter:    filter,
-
-		DataSource: dataSource,
-
-		Collector: collector,
+		Config: config,
 	}
 
 	nextUid++
@@ -70,16 +53,11 @@ func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](
 }
 
 func NewDefaultProcess[KeyIn, ValueIn any, KeyOut constraints.Ordered, ValueOut any](
-	mapper Mapper[KeyIn, ValueIn, KeyOut, ValueOut],
-	reducer Reducer[KeyOut, ValueOut],
-	finalizer Finalizer[KeyOut, ValueOut],
-	filter Filter[KeyOut, ValueOut],
-
-	dataSource Source[KeyIn, ValueIn],
-
-	collector Collector[KeyOut, ValueOut],
+	config Config[KeyIn, ValueIn, KeyOut, ValueOut],
 ) *Process[KeyIn, ValueIn, KeyOut, ValueOut] {
-	return NewProcess(comparison.Ascending[KeyOut], nil, mapper, reducer, finalizer, filter, dataSource, collector)
+	config.KeyComparator = comparison.Ascending[KeyOut]
+
+	return NewProcess(config)
 }
 
 func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) Run(verbose bool) {
