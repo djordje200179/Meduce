@@ -6,13 +6,18 @@ import (
 	"os"
 )
 
+// Formatter is a function that formats key and value into a string.
+// It is used by FileCollector to format key and value before writing them to a file.
 type Formatter[KeyOut, ValueOut any] func(key KeyOut, value ValueOut) string
 
+// FileCollector is a collector that writes key-value pairs to a file.
 type FileCollector[KeyOut, ValueOut any] struct {
 	file      *os.File
 	formatter Formatter[KeyOut, ValueOut]
 }
 
+// NewFileCollector creates a new FileCollector
+// that writes key-value pairs to a file at the given path.
 func NewFileCollector[KeyOut, ValueOut any](path string) meduce.Collector[KeyOut, ValueOut] {
 	file, err := os.Create(path)
 	if err != nil {
@@ -26,6 +31,9 @@ func NewFileCollector[KeyOut, ValueOut any](path string) meduce.Collector[KeyOut
 	return collector
 }
 
+// NewFileCollectorWithFormatter creates a new FileCollector
+// that writes key-value pairs to a file at the given path
+// with the given formatter to format key-value pairs before writing them to a file.
 func NewFileCollectorWithFormatter[KeyOut, ValueOut any](
 	path string,
 	formatter Formatter[KeyOut, ValueOut],
@@ -43,6 +51,8 @@ func NewFileCollectorWithFormatter[KeyOut, ValueOut any](
 	return collector
 }
 
+// NewStdoutCollector creates a new FileCollector
+// that writes key-value pairs to the standard output.
 func NewStdoutCollector[KeyOut, ValueOut any]() meduce.Collector[KeyOut, ValueOut] {
 	collector := FileCollector[KeyOut, ValueOut]{
 		file: os.Stdout,

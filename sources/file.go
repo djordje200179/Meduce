@@ -8,6 +8,8 @@ import (
 	"os"
 )
 
+// NewFileSource creates a new source that reads a file
+// from the given path line by line.
 func NewFileSource(path string) meduce.Source[int, string] {
 	file, err := os.Open(path)
 	if err != nil {

@@ -8,7 +8,12 @@ import (
 	"sync"
 )
 
+// A Config is a configuration for a single MapReduce task.
 type Config[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
+	// KeyComparator and ValueComparator are used to sort key-value pairs
+	// before they are passed to the Reducer.
+	// KeyComparator is used as primary comparator,
+	// and ValueComparator is used as secondary.
 	KeyComparator   functions.Comparator[KeyOut]
 	ValueComparator functions.Comparator[ValueOut]
 
@@ -23,10 +28,11 @@ type Config[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
 
 var nextUid = 0
 
+// A Process is a single MapReduce task.
 type Process[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
 	uid int
 
-	Config[KeyIn, ValueIn, KeyOut, ValueOut]
+	Config[KeyIn, ValueIn, KeyOut, ValueOut] // Config is a configuration for a single MapReduce task.
 
 	mappedKeys   []KeyOut
 	mappedValues []ValueOut
@@ -36,6 +42,7 @@ type Process[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
 	finishSignal sync.WaitGroup
 }
 
+// NewProcess creates a new Process with given configuration.
 func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](config Config[KeyIn, ValueIn, KeyOut, ValueOut]) *Process[KeyIn, ValueIn, KeyOut, ValueOut] {
 	//output = bufio.NewWriter(output)
 
@@ -64,6 +71,7 @@ func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](config Config[KeyIn, Value
 	return process
 }
 
+// NewDefaultProcess creates a new Process with default key comparison for ordered keys.
 func NewDefaultProcess[KeyIn, ValueIn any, KeyOut constraints.Ordered, ValueOut any](
 	config Config[KeyIn, ValueIn, KeyOut, ValueOut],
 ) *Process[KeyIn, ValueIn, KeyOut, ValueOut] {
@@ -72,6 +80,8 @@ func NewDefaultProcess[KeyIn, ValueIn any, KeyOut constraints.Ordered, ValueOut 
 	return NewProcess(config)
 }
 
+// Run starts the MapReduce task and blocks until it is finished.
+// If verbose is true, it will log the steps of the process.
 func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) Run(verbose bool) {
 	if verbose {
 		log.Printf("Process %d: started", process.uid)
@@ -89,6 +99,7 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) Run(verbose bool) {
 	process.finishSignal.Done()
 }
 
+// WaitToFinish blocks until the MapReduce task is finished.
 func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) WaitToFinish() Collector[KeyOut, ValueOut] {
 	process.finishSignal.Wait()
 

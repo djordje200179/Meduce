@@ -7,6 +7,7 @@ import (
 	"runtime"
 )
 
+// AggregateDataSources aggregates multiple data sources into one.
 func AggregateDataSources[K any, V any](dataSources ...meduce.Source[K, V]) meduce.Source[K, V] {
 	cases := make([]reflect.SelectCase, len(dataSources))
 	for i, dataSource := range dataSources {
