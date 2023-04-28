@@ -19,6 +19,7 @@ type Process[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
 	Mapper    Mapper[KeyIn, ValueIn, KeyOut, ValueOut]
 	Reducer   Reducer[KeyOut, ValueOut]
 	Finalizer Finalizer[KeyOut, ValueOut]
+	Filter    Filter[KeyOut, ValueOut]
 
 	DataSource Source[KeyIn, ValueIn]
 
@@ -32,9 +33,16 @@ type Process[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
 }
 
 func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](
-	keyComparator functions.Comparator[KeyOut], valueComparator functions.Comparator[ValueOut],
-	mapper Mapper[KeyIn, ValueIn, KeyOut, ValueOut], reducer Reducer[KeyOut, ValueOut], finalizer Finalizer[KeyOut, ValueOut],
-	dataSource Source[KeyIn, ValueIn], collector Collector[KeyOut, ValueOut],
+	keyComparator functions.Comparator[KeyOut],
+	valueComparator functions.Comparator[ValueOut],
+
+	mapper Mapper[KeyIn, ValueIn, KeyOut, ValueOut],
+	reducer Reducer[KeyOut, ValueOut],
+	finalizer Finalizer[KeyOut, ValueOut],
+	filter Filter[KeyOut, ValueOut],
+
+	dataSource Source[KeyIn, ValueIn],
+	collector Collector[KeyOut, ValueOut],
 ) *Process[KeyIn, ValueIn, KeyOut, ValueOut] {
 	//output = bufio.NewWriter(output)
 
@@ -47,6 +55,7 @@ func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](
 		Mapper:    mapper,
 		Reducer:   reducer,
 		Finalizer: finalizer,
+		Filter:    filter,
 
 		DataSource: dataSource,
 
@@ -61,10 +70,16 @@ func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](
 }
 
 func NewDefaultProcess[KeyIn, ValueIn any, KeyOut constraints.Ordered, ValueOut any](
-	mapper Mapper[KeyIn, ValueIn, KeyOut, ValueOut], reducer Reducer[KeyOut, ValueOut], finalizer Finalizer[KeyOut, ValueOut],
-	dataSource Source[KeyIn, ValueIn], collector Collector[KeyOut, ValueOut],
+	mapper Mapper[KeyIn, ValueIn, KeyOut, ValueOut],
+	reducer Reducer[KeyOut, ValueOut],
+	finalizer Finalizer[KeyOut, ValueOut],
+	filter Filter[KeyOut, ValueOut],
+
+	dataSource Source[KeyIn, ValueIn],
+
+	collector Collector[KeyOut, ValueOut],
 ) *Process[KeyIn, ValueIn, KeyOut, ValueOut] {
-	return NewProcess(comparison.Ascending[KeyOut], nil, mapper, reducer, finalizer, dataSource, collector)
+	return NewProcess(comparison.Ascending[KeyOut], nil, mapper, reducer, finalizer, filter, dataSource, collector)
 }
 
 func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) Run(verbose bool) {

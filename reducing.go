@@ -21,7 +21,7 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) reduceData() {
 
 	for i := 0; i < threadsCount; i++ {
 		go reducingThread(
-			process.Reducer, process.Finalizer,
+			process.Reducer, process.Finalizer, process.Filter,
 			readyDataPool,
 			process.collectData, &barrier,
 		)

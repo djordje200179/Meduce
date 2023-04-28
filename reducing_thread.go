@@ -12,7 +12,7 @@ type reducingDataGroup[KeyOut, ValueOut any] struct {
 }
 
 func reducingThread[KeyOut, ValueOut any](
-	reducer Reducer[KeyOut, ValueOut], finalizer Finalizer[KeyOut, ValueOut],
+	reducer Reducer[KeyOut, ValueOut], finalizer Finalizer[KeyOut, ValueOut], filter Filter[KeyOut, ValueOut],
 	dataPool <-chan reducingDataGroup[KeyOut, ValueOut],
 	collect func(key KeyOut, value ValueOut), finishSignal *sync.WaitGroup,
 ) {
@@ -28,7 +28,9 @@ func reducingThread[KeyOut, ValueOut any](
 			finalizer(groupData.key, &reducedValue)
 		}
 
-		collect(groupData.key, reducedValue)
+		if filter == nil || filter(groupData.key, &reducedValue) {
+			collect(groupData.key, reducedValue)
+		}
 	}
 
 	finishSignal.Done()
