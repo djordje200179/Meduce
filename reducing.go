@@ -23,14 +23,14 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) reduceData() {
 		go reducingThread(
 			&process.Config,
 			readyDataPool,
-			process.collectData, &barrier,
+			process.collectorWrapper, &barrier,
 		)
 	}
 
 	barrier.Wait()
 }
 
-func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) collectData(key KeyOut, value ValueOut) {
+func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) collectorWrapper(key KeyOut, value ValueOut) {
 	process.collectingMutex.Lock()
 	process.Collector.Collect(key, value)
 	process.collectingMutex.Unlock()
