@@ -25,12 +25,12 @@ as you want by calling `emit` function.
 2. `func Reducer(key KeyOut, values []ValueOut) ValueOut`  
 This function reduces all values that were mapped to the same key. 
 It will be called many times to reduce local data, and then once more to reduce
-all data from all threads. Because of that it should be idempotent and 
+all data from all threads. Because of that, it should be zimportant and 
 have no side effects.
 
-3. `func Finalizer(key KeyOut, valueRef *ValueOut) ValueOut` (optional)  
+3. `func Finalizer(key KeyOut, valueRef *ValueOut) ValueOut` (optional) 
 This function is called after all data was processed and reduced. It is used to 
-calculate final results in values that were reduced. It receives pointer to value,
+calculate final results in values that were reduced. It receives a pointer to value,
 so you should modify it in-place.  
 If you don't need this function you can pass `nil` instead.
 
@@ -52,8 +52,9 @@ use predefined collectors (`FileCollector`, `MapCollector`, `ChannelCollector`) 
 create your own that implements `Collector[K, V]` interface.
 
 ### Process
-To start data processing you firstly need to create an `Process` object. That can be 
-accomplished by using some constructor functions. The most general one is:
+To start data processing, you firstly need to create an `Process` object. 
+That can be accomplished by using some constructor functions.
+The most general one is:
 ```go
 func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](
 	keyComparator functions.Comparator[KeyOut],
@@ -68,7 +69,7 @@ func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](
 ) *Process[KeyIn, ValueIn, KeyOut, ValueOut]
 ```
 
-After creating the process you can start it either synchronously or asynchronously. And if you
+After creating the process, you can start it either synchronously or asynchronously. And if you
 start it asynchronously, you can wait for it to finish by calling `WaitToFinish()` method.
 ```go
 go process.Run()
@@ -76,7 +77,7 @@ process.WaitToFinish()
 ```
 
 ## Example
-In this example we are using IMDB title_basics dataset to find out how many movies
+In this example, we're using IMDB title_basics dataset to find out how many movies
 were released each year.
 
 ```go
@@ -91,6 +92,7 @@ import (
 
 func MapMovieToYear(_ int, line string, emit meduce.Emitter[string, int]) {
 	values := strings.Split(line, "\t")
+
 	year := values[5]
 
 	emit(year, 1)
@@ -107,9 +109,13 @@ func ReduceYearCounters(_ string, counters []int) int {
 
 func main() {
 	process := meduce.NewDefaultProcess(
-		MapMovieToYear, ReduceYearCounters, nil,
-		sources.NewFileSource("files/title_basics.tsv"),
-		collectors.NewFileCollector[string, int]("output.txt"),
+		meduce.Config[int, string, string, int]{
+			Mapper:  MapMovieToYear,
+			Reducer: ReduceYearCounters,
+
+			Source:    sources.NewFileSource("files/title_basics.tsv"),
+			Collector: collectors.NewFileCollector[string, int]("output.txt"),
+		},
 	)
 
 	process.Run(true)
