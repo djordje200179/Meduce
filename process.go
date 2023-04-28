@@ -39,6 +39,18 @@ type Process[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
 func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](config Config[KeyIn, ValueIn, KeyOut, ValueOut]) *Process[KeyIn, ValueIn, KeyOut, ValueOut] {
 	//output = bufio.NewWriter(output)
 
+	if config.KeyComparator == nil {
+		panic("KeyComparator must be set")
+	}
+
+	if config.Mapper == nil {
+		panic("Mapper must be set")
+	}
+
+	if config.Reducer == nil {
+		panic("Reducer must be set")
+	}
+
 	process := &Process[KeyIn, ValueIn, KeyOut, ValueOut]{
 		uid: nextUid,
 
