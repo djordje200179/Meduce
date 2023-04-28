@@ -13,7 +13,8 @@ var nextUid int = 0
 type Process[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
 	uid int
 
-	KeyComparator functions.Comparator[KeyOut]
+	KeyComparator   functions.Comparator[KeyOut]
+	ValueComparator functions.Comparator[ValueOut]
 
 	Mapper    Mapper[KeyIn, ValueIn, KeyOut, ValueOut]
 	Reducer   Reducer[KeyOut, ValueOut]
@@ -31,7 +32,7 @@ type Process[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
 }
 
 func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](
-	keyComparator functions.Comparator[KeyOut],
+	keyComparator functions.Comparator[KeyOut], valueComparator functions.Comparator[ValueOut],
 	mapper Mapper[KeyIn, ValueIn, KeyOut, ValueOut], reducer Reducer[KeyOut, ValueOut], finalizer Finalizer[KeyOut, ValueOut],
 	dataSource Source[KeyIn, ValueIn], collector Collector[KeyOut, ValueOut],
 ) *Process[KeyIn, ValueIn, KeyOut, ValueOut] {
@@ -40,7 +41,8 @@ func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](
 	process := &Process[KeyIn, ValueIn, KeyOut, ValueOut]{
 		uid: nextUid,
 
-		KeyComparator: keyComparator,
+		KeyComparator:   keyComparator,
+		ValueComparator: valueComparator,
 
 		Mapper:    mapper,
 		Reducer:   reducer,
@@ -62,7 +64,7 @@ func NewProcessWithOrderedKeys[KeyIn, ValueIn any, KeyOut constraints.Ordered, V
 	mapper Mapper[KeyIn, ValueIn, KeyOut, ValueOut], reducer Reducer[KeyOut, ValueOut], finalizer Finalizer[KeyOut, ValueOut],
 	dataSource Source[KeyIn, ValueIn], collector Collector[KeyOut, ValueOut],
 ) *Process[KeyIn, ValueIn, KeyOut, ValueOut] {
-	return NewProcess(comparison.Ascending[KeyOut], mapper, reducer, finalizer, dataSource, collector)
+	return NewProcess(comparison.Ascending[KeyOut], nil, mapper, reducer, finalizer, dataSource, collector)
 }
 
 func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) Run(verbose bool) {

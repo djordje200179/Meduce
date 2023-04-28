@@ -8,14 +8,15 @@ import (
 )
 
 func mappingThread[KeyIn, ValueIn, KeyOut, ValueOut any](
-	keyComparator functions.Comparator[KeyOut],
+	keyComparator functions.Comparator[KeyOut], valueComparator functions.Comparator[ValueOut],
 	mapper Mapper[KeyIn, ValueIn, KeyOut, ValueOut], combiner Reducer[KeyOut, ValueOut],
 	dataSource Source[KeyIn, ValueIn],
 	keysPlace *[]KeyOut, valuesPlace *[]ValueOut,
 	finishSignal *sync.WaitGroup,
 ) {
 	mappedData := mappingThreadData[KeyOut, ValueOut]{
-		keyComparator: keyComparator,
+		keyComparator:   keyComparator,
+		valueComparator: valueComparator,
 	}
 
 	for pair := range dataSource {
@@ -33,7 +34,8 @@ func mappingThread[KeyIn, ValueIn, KeyOut, ValueOut any](
 }
 
 type mappingThreadData[KeyOut, ValueOut any] struct {
-	keyComparator functions.Comparator[KeyOut]
+	keyComparator   functions.Comparator[KeyOut]
+	valueComparator functions.Comparator[ValueOut]
 
 	keys   []KeyOut
 	values []ValueOut
@@ -48,7 +50,18 @@ func (data *mappingThreadData[KeyOut, ValueOut]) Len() int {
 }
 
 func (data *mappingThreadData[KeyOut, ValueOut]) Less(i, j int) bool {
-	return data.keyComparator(data.keys[i], data.keys[j]) == comparison.FirstSmaller
+	keyComparisonResult := data.keyComparator(data.keys[i], data.keys[j])
+
+	if keyComparisonResult == comparison.FirstSmaller {
+		return true
+	} else if keyComparisonResult == comparison.Equal {
+		if data.valueComparator == nil {
+			return false
+		}
+		return data.valueComparator(data.values[i], data.values[j]) == comparison.FirstSmaller
+	} else {
+		return false
+	}
 }
 
 func (data *mappingThreadData[KeyOut, ValueOut]) Swap(i, j int) {
