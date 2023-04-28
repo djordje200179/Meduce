@@ -1,16 +1,15 @@
 # Meduce
 
-Library for processing huge amounts of data on your device by using 
-MapReduce paradigm. It is inspired partially by Hadoop MapReduce 
-and partially by MongoDB MapReduce.
+A library for processing huge amounts of data on your device by using 
+MapReduce paradigm. It was inspired by Hadoop MapReduce and MongoDB MapReduce.
 
 The goal of the library is to fully utilize all of your CPU cores
 and maximize concurrent processing of data. It is not meant to be
 used for distributed processing, but it can be used to process data
 in parallel on a single machine.
 
-It is written in Go 1.19, and it fully utilizes generic mechanics, 
-so you don't need to worry about type safety and casts from `interface{}`.
+It is written in Go 1.20, and it fully utilizes generic mechanics, 
+so you don't need to worry about casts from `interface{}`.
 
 ## Usage
 
@@ -22,7 +21,6 @@ all of your data:
 This function maps data that you supplied to key-value pairs. 
 For each piece of data you can emit as many key-value pairs 
 as you want by calling `emit` function. 
-The function should not have any side effects.
 
 2. `func Reducer(key KeyOut, values []ValueOut) ValueOut`  
 This function reduces all values that were mapped to the same key. 
@@ -59,6 +57,7 @@ accomplished by using some constructor functions. The most general one is:
 ```go
 func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](
 	keyComparator functions.Comparator[KeyOut],
+	valueComparator functions.Comparator[ValueOut],
 	
 	mapper Mapper[KeyIn, ValueIn, KeyOut, ValueOut], 
 	reducer Reducer[KeyOut, ValueOut], 
@@ -69,7 +68,7 @@ func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](
 ) *Process[KeyIn, ValueIn, KeyOut, ValueOut]
 ```
 
-After that you can start process either synchronously or asynchronously. And if you
+After creating the process you can start it either synchronously or asynchronously. And if you
 start it asynchronously, you can wait for it to finish by calling `WaitToFinish()` method.
 ```go
 go process.Run()
@@ -97,7 +96,7 @@ func MapMovieToYear(_ int, line string, emit meduce.Emitter[string, int]) {
 	emit(year, 1)
 }
 
-func ReduceYearToCount(key string, counters []int) int {
+func ReduceYearCounters(_ string, counters []int) int {
 	count := 0
 	for _, value := range counters {
 		count += value
@@ -107,8 +106,8 @@ func ReduceYearToCount(key string, counters []int) int {
 }
 
 func main() {
-	process := meduce.NewProcessWithOrderedKeys(
-		MapMovieToYear, ReduceYearToCount, nil,
+	process := meduce.NewDefaultProcess(
+		MapMovieToYear, ReduceYearCounters, nil,
 		sources.NewFileSource("files/title_basics.tsv"),
 		collectors.NewFileCollector[string, int]("output.txt"),
 	)
