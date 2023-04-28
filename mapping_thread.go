@@ -1,31 +1,27 @@
 package meduce
 
 import (
-	"github.com/djordje200179/extendedlibrary/misc/functions"
 	"github.com/djordje200179/extendedlibrary/misc/functions/comparison"
 	"sort"
 	"sync"
 )
 
 func mappingThread[KeyIn, ValueIn, KeyOut, ValueOut any](
-	keyComparator functions.Comparator[KeyOut], valueComparator functions.Comparator[ValueOut],
-	mapper Mapper[KeyIn, ValueIn, KeyOut, ValueOut], combiner Reducer[KeyOut, ValueOut],
-	dataSource Source[KeyIn, ValueIn],
+	config *Config[KeyIn, ValueIn, KeyOut, ValueOut],
 	keysPlace *[]KeyOut, valuesPlace *[]ValueOut,
 	finishSignal *sync.WaitGroup,
 ) {
-	mappedData := mappingThreadData[KeyOut, ValueOut]{
-		keyComparator:   keyComparator,
-		valueComparator: valueComparator,
+	mappedData := mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut]{
+		Config: config,
 	}
 
-	for pair := range dataSource {
-		mapper(pair.First, pair.Second, mappedData.append)
+	for pair := range config.Source {
+		config.Mapper(pair.First, pair.Second, mappedData.append)
 	}
 
 	sort.Sort(&mappedData)
 
-	uniqueKeys, combinedValues := mappedData.combine(combiner)
+	uniqueKeys, combinedValues := mappedData.combine()
 
 	*keysPlace = uniqueKeys
 	*valuesPlace = combinedValues
@@ -33,43 +29,42 @@ func mappingThread[KeyIn, ValueIn, KeyOut, ValueOut any](
 	finishSignal.Done()
 }
 
-type mappingThreadData[KeyOut, ValueOut any] struct {
-	keyComparator   functions.Comparator[KeyOut]
-	valueComparator functions.Comparator[ValueOut]
+type mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
+	*Config[KeyIn, ValueIn, KeyOut, ValueOut]
 
 	keys   []KeyOut
 	values []ValueOut
 }
 
-func (data *mappingThreadData[KeyOut, ValueOut]) append(key KeyOut, value ValueOut) {
+func (data *mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut]) append(key KeyOut, value ValueOut) {
 	data.keys = append(data.keys, key)
 	data.values = append(data.values, value)
 }
-func (data *mappingThreadData[KeyOut, ValueOut]) Len() int {
+func (data *mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut]) Len() int {
 	return len(data.keys)
 }
 
-func (data *mappingThreadData[KeyOut, ValueOut]) Less(i, j int) bool {
-	keyComparisonResult := data.keyComparator(data.keys[i], data.keys[j])
+func (data *mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut]) Less(i, j int) bool {
+	keyComparisonResult := data.KeyComparator(data.keys[i], data.keys[j])
 
 	if keyComparisonResult == comparison.FirstSmaller {
 		return true
 	} else if keyComparisonResult == comparison.Equal {
-		if data.valueComparator == nil {
+		if data.ValueComparator == nil {
 			return false
 		}
-		return data.valueComparator(data.values[i], data.values[j]) == comparison.FirstSmaller
+		return data.ValueComparator(data.values[i], data.values[j]) == comparison.FirstSmaller
 	} else {
 		return false
 	}
 }
 
-func (data *mappingThreadData[KeyOut, ValueOut]) Swap(i, j int) {
+func (data *mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut]) Swap(i, j int) {
 	data.keys[i], data.keys[j] = data.keys[j], data.keys[i]
 	data.values[i], data.values[j] = data.values[j], data.values[i]
 }
 
-func (data *mappingThreadData[KeyOut, ValueOut]) combine(reducer Reducer[KeyOut, ValueOut]) ([]KeyOut, []ValueOut) {
+func (data *mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut]) combine() ([]KeyOut, []ValueOut) {
 	if len(data.keys) == 0 {
 		return nil, nil
 	}
@@ -84,7 +79,7 @@ func (data *mappingThreadData[KeyOut, ValueOut]) combine(reducer Reducer[KeyOut,
 		if i != data.Len() {
 			currentKey := data.keys[i]
 
-			if data.keyComparator(lastKey, currentKey) == comparison.Equal {
+			if data.KeyComparator(lastKey, currentKey) == comparison.Equal {
 				continue
 			}
 		}
@@ -101,7 +96,7 @@ func (data *mappingThreadData[KeyOut, ValueOut]) combine(reducer Reducer[KeyOut,
 		}
 
 		validValues := data.values[firstIndex : lastIndex+1]
-		reducedValue := reducer(lastKey, validValues)
+		reducedValue := data.Config.Reducer(lastKey, validValues)
 
 		uniqueKeys = append(uniqueKeys, lastKey)
 		combinedValues = append(combinedValues, reducedValue)

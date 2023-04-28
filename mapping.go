@@ -16,9 +16,7 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) mapData() {
 
 	for i := 0; i < threadsCount; i++ {
 		go mappingThread(
-			process.KeyComparator, process.ValueComparator,
-			process.Mapper, process.Reducer,
-			process.Source,
+			&process.Config,
 			&keysArrays[i], &valuesArrays[i],
 			&allMappersFinished,
 		)

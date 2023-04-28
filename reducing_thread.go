@@ -11,8 +11,8 @@ type reducingDataGroup[KeyOut, ValueOut any] struct {
 	values []ValueOut
 }
 
-func reducingThread[KeyOut, ValueOut any](
-	reducer Reducer[KeyOut, ValueOut], finalizer Finalizer[KeyOut, ValueOut], filter Filter[KeyOut, ValueOut],
+func reducingThread[KeyIn, ValueIn, KeyOut, ValueOut any](
+	config *Config[KeyIn, ValueIn, KeyOut, ValueOut],
 	dataPool <-chan reducingDataGroup[KeyOut, ValueOut],
 	collect func(key KeyOut, value ValueOut), finishSignal *sync.WaitGroup,
 ) {
@@ -21,14 +21,14 @@ func reducingThread[KeyOut, ValueOut any](
 		if len(groupData.values) == 1 {
 			reducedValue = groupData.values[0]
 		} else {
-			reducedValue = reducer(groupData.key, groupData.values)
+			reducedValue = config.Reducer(groupData.key, groupData.values)
 		}
 
-		if finalizer != nil {
-			finalizer(groupData.key, &reducedValue)
+		if config.Finalizer != nil {
+			config.Finalizer(groupData.key, &reducedValue)
 		}
 
-		if filter == nil || filter(groupData.key, &reducedValue) {
+		if config.Filter == nil || config.Filter(groupData.key, &reducedValue) {
 			collect(groupData.key, reducedValue)
 		}
 	}
