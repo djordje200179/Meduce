@@ -28,7 +28,7 @@ It will be called many times to reduce local data, and then once more to reduce
 all data from all threads. Because of that, it should be zimportant and 
 have no side effects.
 
-3. `func Finalizer(key KeyOut, valueRef *ValueOut) ValueOut` (optional) 
+3. `func Finalizer(key KeyOut, valueRef *ValueOut) ValueOut` (optional)  
 This function is called after all data was processed and reduced. It is used to 
 calculate final results in values that were reduced. It receives a pointer to value,
 so you should modify it in-place.  
@@ -53,21 +53,7 @@ create your own that implements `Collector[K, V]` interface.
 
 ### Process
 To start data processing, you firstly need to create an `Process` object. 
-That can be accomplished by using some constructor functions.
-The most general one is:
-```go
-func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](
-	keyComparator functions.Comparator[KeyOut],
-	valueComparator functions.Comparator[ValueOut],
-	
-	mapper Mapper[KeyIn, ValueIn, KeyOut, ValueOut], 
-	reducer Reducer[KeyOut, ValueOut], 
-	finalizer Finalizer[KeyOut, ValueOut],
-	
-	dataSource Source[KeyIn, ValueIn], 
-	collector Collector[KeyOut, ValueOut],
-) *Process[KeyIn, ValueIn, KeyOut, ValueOut]
-```
+That can be accomplished by calling a constructor function.
 
 After creating the process, you can start it either synchronously or asynchronously. And if you
 start it asynchronously, you can wait for it to finish by calling `WaitToFinish()` method.
@@ -76,9 +62,25 @@ go process.Run()
 process.WaitToFinish()
 ```
 
+### Links
+You can link multiple processes together to create a pipeline.
+Interconnected processes will share data between each other internally.
+
+They will be executed in parallel, and you don't need to worry about
+starting them manually. 
+You only need to start the first one asynchronously, and the rest 
+will be started automatically.
+
+If you want to wait for all processes to finish, you can wait for the
+last one to finish by calling `WaitToFinish()` method on it.
+
 ## Example
-In this example, we're using IMDB title_basics dataset to find out how many movies
-were released each year.
+In this example, we're using IMDB title_basics dataset (can be found [here](https://datasets.imdbws.com/)) 
+to find out in which year the most movies were released. 
+
+We will create two linked processes. 
+The first one will count how many movies were released in each year,
+and the second one will find the year with the most movies.
 
 ```go
 package main
@@ -87,18 +89,23 @@ import (
 	"github.com/djordje200179/meduce"
 	"github.com/djordje200179/meduce/collectors"
 	"github.com/djordje200179/meduce/sources"
+	"log"
+	"strconv"
 	"strings"
 )
 
-func MapMovieToYear(_ int, line string, emit meduce.Emitter[string, int]) {
+func MapMovieToYear(_ int, line string, emit meduce.Emitter[int, int]) {
 	values := strings.Split(line, "\t")
 
-	year := values[5]
+	year, err := strconv.Atoi(values[5])
+	if err != nil {
+		return
+	}
 
 	emit(year, 1)
 }
 
-func ReduceYearCounters(_ string, counters []int) int {
+func ReduceYearCounters(_ int, counters []int) int {
 	count := 0
 	for _, value := range counters {
 		count += value
@@ -107,19 +114,53 @@ func ReduceYearCounters(_ string, counters []int) int {
 	return count
 }
 
+type YearInfo struct {
+	Year  int
+	Count int
+}
+
+func MapYearToInfo(year int, count int, emit meduce.Emitter[string, YearInfo]) {
+	emit("max", YearInfo{year, count})
+}
+
+func ReduceMaxYear(_ string, infoList []YearInfo) YearInfo {
+	var max YearInfo
+
+	for _, info := range infoList {
+		if max.Year == 0 || info.Count > max.Count {
+			max = info
+		}
+	}
+
+	return max
+}
+
 func main() {
-	process := meduce.NewDefaultProcess(
-		meduce.Config[int, string, string, int]{
+	process1 := meduce.NewDefaultProcess(
+		meduce.Config[int, string, int, int]{
 			Mapper:  MapMovieToYear,
 			Reducer: ReduceYearCounters,
 
-			Source:    sources.NewFileSource("files/title_basics.tsv"),
-			Collector: collectors.NewFileCollector[string, int]("output.txt"),
+			Source: sources.NewFileSource("files/title_basics.tsv"),
 
 			Logger: log.Default(),
 		},
 	)
 
-	process.Run()
+	process2 := meduce.NewDefaultProcess(
+		meduce.Config[int, int, string, YearInfo]{
+			Mapper:  MapYearToInfo,
+			Reducer: ReduceMaxYear,
+
+			Collector: collectors.NewStdoutCollector[string, YearInfo](),
+
+			Logger: log.Default(),
+		},
+	)
+
+	meduce.Link(process1, process2)
+
+	go process1.Run()
+	process2.WaitToFinish()
 }
 ```
