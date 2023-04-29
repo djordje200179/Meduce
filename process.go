@@ -30,11 +30,11 @@ type Config[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
 
 var nextUid = 0
 
-// A Process is a single MapReduce task.
+// A Process is an instance of a single MapReduce task.
 type Process[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
 	uid int
 
-	Config[KeyIn, ValueIn, KeyOut, ValueOut] // Config is a configuration for a single MapReduce task.
+	Config[KeyIn, ValueIn, KeyOut, ValueOut]
 
 	mappedKeys   []KeyOut
 	mappedValues []ValueOut
@@ -73,7 +73,7 @@ func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](config Config[KeyIn, Value
 	return process
 }
 
-// NewDefaultProcess creates a new Process with default key comparison for ordered keys.
+// NewDefaultProcess creates a new Process with default key comparator for ordered keys.
 func NewDefaultProcess[KeyIn, ValueIn any, KeyOut constraints.Ordered, ValueOut any](
 	config Config[KeyIn, ValueIn, KeyOut, ValueOut],
 ) *Process[KeyIn, ValueIn, KeyOut, ValueOut] {
@@ -83,7 +83,8 @@ func NewDefaultProcess[KeyIn, ValueIn any, KeyOut constraints.Ordered, ValueOut 
 }
 
 // Run starts the MapReduce task and blocks until it is finished.
-// If verbose is true, it will log the steps of the process.
+//
+// If verbose is set to true, it will log the steps of the process.
 func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) Run(verbose bool) {
 	if verbose {
 		log.Printf("Process %d: started", process.uid)
