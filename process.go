@@ -50,18 +50,6 @@ type Process[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
 func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](config Config[KeyIn, ValueIn, KeyOut, ValueOut]) *Process[KeyIn, ValueIn, KeyOut, ValueOut] {
 	//output = bufio.NewWriter(output)
 
-	if config.KeyComparator == nil {
-		panic("KeyComparator must be set")
-	}
-
-	if config.Mapper == nil {
-		panic("Mapper must be set")
-	}
-
-	if config.Reducer == nil {
-		panic("Reducer must be set")
-	}
-
 	process := &Process[KeyIn, ValueIn, KeyOut, ValueOut]{
 		uid: nextUid,
 
@@ -88,6 +76,26 @@ func NewDefaultProcess[KeyIn, ValueIn any, KeyOut constraints.Ordered, ValueOut 
 //
 // If logger is set, it will be used to log the progress.
 func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) Run() {
+	if process.KeyComparator == nil {
+		panic("KeyComparator must be set")
+	}
+
+	if process.Mapper == nil {
+		panic("Mapper must be set")
+	}
+
+	if process.Reducer == nil {
+		panic("Reducer must be set")
+	}
+
+	if process.Source == nil {
+		panic("Source must be set")
+	}
+
+	if process.Collector == nil {
+		panic("Collector must be set")
+	}
+
 	if process.Logger != nil {
 		process.Logger.Printf("Process %d: started", process.uid)
 	}
