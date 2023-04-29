@@ -14,25 +14,13 @@ so you don't need to worry about casts from `interface{}`.
 ## Usage
 
 ### Functions
-The paradigm is pretty simple. You only need two (or three) functions to process
+The paradigm is pretty simple. You only need two (or four) functions to process
 all of your data:
 
-1. `func Mapper(key KeyIn, value ValueIn, emit Emitter[KeyOut, ValueOut])`  
-This function maps data that you supplied to key-value pairs. 
-For each piece of data you can emit as many key-value pairs 
-as you want by calling `emit` function. 
-
-2. `func Reducer(key KeyOut, values []ValueOut) ValueOut`  
-This function reduces all values that were mapped to the same key. 
-It will be called many times to reduce local data, and then once more to reduce
-all data from all threads. Because of that, it should be zimportant and 
-have no side effects.
-
-3. `func Finalizer(key KeyOut, valueRef *ValueOut) ValueOut` (optional)  
-This function is called after all data was processed and reduced. It is used to 
-calculate final results in values that were reduced. It receives a pointer to value,
-so you should modify it in-place.  
-If you don't need this function you can pass `nil` instead.
+1. `func Mapper(key KeyIn, value ValueIn, emit Emitter[KeyOut, ValueOut])`
+2. `func Reducer(key KeyOut, values []ValueOut) ValueOut`
+3. `func Finalizer(key KeyOut, valueRef *ValueOut) ValueOut` _(optional)_
+4. `func Filter(key KeyOut, valueRef *ValueOut) bool` _(optional)_
 
 ### Sources
 Data is gathered from a channel named `Source`. You can use any channel, but most

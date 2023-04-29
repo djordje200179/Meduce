@@ -17,6 +17,11 @@ type Emitter[KeyOut, ValueOut any] func(key KeyOut, value ValueOut)
 
 // A Mapper is a function that is created by user
 // and is used to map input data to key-value pairs.
+//
+// It is called for each key-value pair from input data.
+//
+// Function can call emit function multiple times
+// to emit any number of key-value pairs.
 type Mapper[KeyIn, ValueIn, KeyOut, ValueOut any] func(key KeyIn, value ValueIn, emit Emitter[KeyOut, ValueOut])
 
 // A Reducer is a function that is created by user
@@ -24,6 +29,7 @@ type Mapper[KeyIn, ValueIn, KeyOut, ValueOut any] func(key KeyIn, value ValueIn,
 //
 // It is called for all keys multiple times,
 // until all values for that key are reduced.
+//
 // It should be idempotent and have no side effects.
 type Reducer[KeyOut, ValueOut any] func(key KeyOut, values []ValueOut) ValueOut
 
@@ -32,10 +38,18 @@ type Reducer[KeyOut, ValueOut any] func(key KeyOut, values []ValueOut) ValueOut
 //
 // It is called after all values for a key were reduced
 // to a single value.
+//
+// It should process the reduced value in-place before
+// it is passed to collector.
 type Finalizer[KeyOut, ValueOut any] func(key KeyOut, valueRef *ValueOut)
 
 // A Filter is a function that is created by user
 // and is used to filter processed key-value pairs.
+//
+// It is called after a key-value pair was finalized.
+//
+// It should return true if a final key-value pair
+// should be collected or false if it should be discarded.
 type Filter[KeyOut, ValueOut any] func(key KeyOut, valueRef *ValueOut) bool
 
 // A Collector is an entity that is supplied by user
