@@ -33,6 +33,8 @@ type Config[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
 var nextUid = 0
 
 // A Process is an instance of a single MapReduce task.
+//
+// Zero value of Process has no configuration set and has invalid uid.
 type Process[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
 	uid int
 
