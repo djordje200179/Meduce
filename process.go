@@ -26,6 +26,8 @@ type Config[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
 
 	Source    Source[KeyIn, ValueIn]
 	Collector Collector[KeyOut, ValueOut]
+
+	Logger *log.Logger
 }
 
 var nextUid = 0
@@ -84,18 +86,18 @@ func NewDefaultProcess[KeyIn, ValueIn any, KeyOut constraints.Ordered, ValueOut 
 
 // Run starts the MapReduce task and blocks until it is finished.
 //
-// If verbose is set to true, it will log the steps of the process.
-func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) Run(verbose bool) {
-	if verbose {
-		log.Printf("Process %d: started", process.uid)
+// If logger is set, it will be used to log the progress.
+func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) Run() {
+	if process.Logger != nil {
+		process.Logger.Printf("Process %d: started", process.uid)
 	}
 	process.mapData()
-	if verbose {
-		log.Printf("Process %d: mappings finished", process.uid)
+	if process.Logger != nil {
+		process.Logger.Printf("Process %d: mappings finished", process.uid)
 	}
 	process.reduceData()
-	if verbose {
-		log.Printf("Process %d: reductions finished", process.uid)
+	if process.Logger != nil {
+		process.Logger.Printf("Process %d: reductions finished", process.uid)
 	}
 
 	process.Collector.Finalize()

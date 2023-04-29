@@ -115,9 +115,11 @@ func main() {
 
 			Source:    sources.NewFileSource("files/title_basics.tsv"),
 			Collector: collectors.NewFileCollector[string, int]("output.txt"),
+
+			Logger: log.Default(),
 		},
 	)
 
-	process.Run(true)
+	process.Run()
 }
 ```
