@@ -51,14 +51,8 @@ func NewFileCollectorWithFormatter[KeyOut, ValueOut any](
 	return collector
 }
 
-// NewStdoutCollector creates a new FileCollector
-// that writes key-value pairs to the standard output.
-func NewStdoutCollector[KeyOut, ValueOut any]() meduce.Collector[KeyOut, ValueOut] {
-	collector := FileCollector[KeyOut, ValueOut]{
-		file: os.Stdout,
-	}
+func (collector FileCollector[KeyOut, ValueOut]) Init() {
 
-	return collector
 }
 
 func (collector FileCollector[KeyOut, ValueOut]) Collect(key KeyOut, value ValueOut) {

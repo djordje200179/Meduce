@@ -110,7 +110,6 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) Run() {
 		process.Logger.Printf("Process %d: reductions finished", process.uid)
 	}
 
-	process.Collector.Finalize()
 	process.finishSignal.Done()
 }
 

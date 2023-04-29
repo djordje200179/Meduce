@@ -20,6 +20,8 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) reduceData() {
 		readyDataPool,
 	)
 
+	process.Collector.Init()
+
 	for i := 0; i < threadsCount; i++ {
 		go reducingThread(
 			&process.Config,
@@ -29,6 +31,8 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) reduceData() {
 	}
 
 	barrier.Wait()
+
+	process.Collector.Finalize()
 }
 
 func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) collectorWrapper(key KeyOut, value ValueOut) {

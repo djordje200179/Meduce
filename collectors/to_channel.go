@@ -11,6 +11,10 @@ func NewChannelCollector[KeyOut, ValueOut any](bufferSize int) ChannelCollector[
 	return make(chan misc.Pair[KeyOut, ValueOut], bufferSize)
 }
 
+func (collector ChannelCollector[KeyOut, ValueOut]) Init() {
+
+}
+
 func (collector ChannelCollector[KeyOut, ValueOut]) Collect(key KeyOut, value ValueOut) {
 	collector <- misc.Pair[KeyOut, ValueOut]{key, value}
 }

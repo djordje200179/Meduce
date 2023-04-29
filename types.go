@@ -41,6 +41,7 @@ type Filter[KeyOut, ValueOut any] func(key KeyOut, valueRef *ValueOut) bool
 // A Collector is an entity that is supplied by user
 // and is used to collect processed key-value pairs.
 type Collector[KeyOut, ValueOut any] interface {
+	Init()                              // Init is called just before collecting starts
 	Collect(key KeyOut, value ValueOut) // Collect is called for each processed key-value pair
 	Finalize()                          // Finalize is called after all key-value pairs were processed
 }

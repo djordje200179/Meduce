@@ -10,6 +10,10 @@ func NewMapCollector[KeyOut comparable, ValueOut any]() meduce.Collector[KeyOut,
 	return make(MapCollector[KeyOut, ValueOut])
 }
 
+func (collector MapCollector[KeyOut, ValueOut]) Init() {
+
+}
+
 func (collector MapCollector[KeyOut, ValueOut]) Collect(key KeyOut, value ValueOut) {
 	collector[key] = value
 }
