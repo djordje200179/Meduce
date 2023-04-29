@@ -1,3 +1,5 @@
+// Package meduce implements an interface to
+// run MapReduce tasks on a single machine.
 package meduce
 
 import (
