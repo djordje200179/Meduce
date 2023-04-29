@@ -3,6 +3,7 @@
 package meduce
 
 import (
+	"github.com/djordje200179/extendedlibrary/misc"
 	"github.com/djordje200179/extendedlibrary/misc/functions"
 	"github.com/djordje200179/extendedlibrary/misc/functions/comparison"
 	"golang.org/x/exp/constraints"
@@ -44,14 +45,15 @@ type Process[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
 	mappedValues []ValueOut
 
 	collectingMutex sync.Mutex
+	linkBuffer      chan misc.Pair[KeyOut, ValueOut]
 
-	finishSignal sync.WaitGroup
+	processFinished sync.WaitGroup
+
+	runNext func()
 }
 
 // NewProcess creates a new Process with given configuration.
 func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](config Config[KeyIn, ValueIn, KeyOut, ValueOut]) *Process[KeyIn, ValueIn, KeyOut, ValueOut] {
-	//output = bufio.NewWriter(output)
-
 	nextUid++
 
 	process := &Process[KeyIn, ValueIn, KeyOut, ValueOut]{
@@ -60,7 +62,7 @@ func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](config Config[KeyIn, Value
 		Config: config,
 	}
 
-	process.finishSignal.Add(1)
+	process.processFinished.Add(1)
 
 	return process
 }
@@ -72,6 +74,30 @@ func NewDefaultProcess[KeyIn, ValueIn any, KeyOut constraints.Ordered, ValueOut 
 	config.KeyComparator = comparison.Ascending[KeyOut]
 
 	return NewProcess(config)
+}
+
+// Link links two processes together.
+func Link[KeyOld, ValueOld, KeyIn, ValueIn, KeyOut, ValueOut any](
+	prevProcess *Process[KeyOld, ValueOld, KeyIn, ValueIn],
+	nextProcess *Process[KeyIn, ValueIn, KeyOut, ValueOut],
+) {
+	LinkWithBufferSize(prevProcess, nextProcess, 100)
+}
+
+// LinkWithBufferSize links two processes together with a buffer of given size.
+//
+// bufferSize is the size of the buffer that will be created to link the processes.
+func LinkWithBufferSize[KeyOld, ValueOld, KeyIn, ValueIn, KeyOut, ValueOut any](
+	prevProcess *Process[KeyOld, ValueOld, KeyIn, ValueIn],
+	nextProcess *Process[KeyIn, ValueIn, KeyOut, ValueOut],
+	bufferSize int,
+) {
+	buffer := make(chan misc.Pair[KeyIn, ValueIn], bufferSize)
+
+	prevProcess.linkBuffer = buffer
+	nextProcess.Source = buffer
+
+	prevProcess.runNext = nextProcess.Run
 }
 
 // Run starts the MapReduce task and blocks until it is finished.
@@ -94,28 +120,30 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) Run() {
 		panic("Source must be set")
 	}
 
-	if process.Collector == nil {
+	if process.Collector == nil && process.linkBuffer == nil {
 		panic("Collector must be set")
 	}
 
 	if process.Logger != nil {
 		process.Logger.Printf("Process %d: started", process.uid)
 	}
+
 	process.mapData()
 	if process.Logger != nil {
 		process.Logger.Printf("Process %d: mappings finished", process.uid)
 	}
+
 	process.reduceData()
 	if process.Logger != nil {
 		process.Logger.Printf("Process %d: reductions finished", process.uid)
 	}
 
-	process.finishSignal.Done()
+	process.processFinished.Done()
 }
 
 // WaitToFinish blocks until the MapReduce task is finished.
 func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) WaitToFinish() Collector[KeyOut, ValueOut] {
-	process.finishSignal.Wait()
+	process.processFinished.Wait()
 
 	return process.Collector
 }

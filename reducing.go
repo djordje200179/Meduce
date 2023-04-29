@@ -1,6 +1,7 @@
 package meduce
 
 import (
+	"github.com/djordje200179/extendedlibrary/misc"
 	"reflect"
 	"runtime"
 	"sync"
@@ -20,7 +21,13 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) reduceData() {
 		readyDataPool,
 	)
 
-	process.Collector.Init()
+	if process.Collector != nil {
+		process.Collector.Init()
+		defer process.Collector.Finalize()
+	} else {
+		go process.runNext()
+		defer close(process.linkBuffer)
+	}
 
 	for i := 0; i < threadsCount; i++ {
 		go reducingThread(
@@ -31,11 +38,14 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) reduceData() {
 	}
 
 	barrier.Wait()
-
-	process.Collector.Finalize()
 }
 
 func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) collectorWrapper(key KeyOut, value ValueOut) {
+	if process.Collector == nil {
+		process.linkBuffer <- misc.Pair[KeyOut, ValueOut]{key, value}
+		return
+	}
+
 	if reflect.TypeOf(process.Collector).Kind() != reflect.Chan {
 		process.collectingMutex.Lock()
 		defer process.collectingMutex.Unlock()
