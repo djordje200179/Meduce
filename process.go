@@ -50,13 +50,13 @@ type Process[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
 func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](config Config[KeyIn, ValueIn, KeyOut, ValueOut]) *Process[KeyIn, ValueIn, KeyOut, ValueOut] {
 	//output = bufio.NewWriter(output)
 
+	nextUid++
+
 	process := &Process[KeyIn, ValueIn, KeyOut, ValueOut]{
 		uid: nextUid,
 
 		Config: config,
 	}
-
-	nextUid++
 
 	process.finishSignal.Add(1)
 
