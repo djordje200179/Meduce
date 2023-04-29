@@ -1,6 +1,7 @@
 package meduce
 
 import (
+	"reflect"
 	"runtime"
 	"sync"
 )
@@ -31,7 +32,10 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) reduceData() {
 }
 
 func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) collectorWrapper(key KeyOut, value ValueOut) {
-	process.collectingMutex.Lock()
+	if reflect.TypeOf(process.Collector).Kind() != reflect.Chan {
+		process.collectingMutex.Lock()
+		defer process.collectingMutex.Unlock()
+	}
+
 	process.Collector.Collect(key, value)
-	process.collectingMutex.Unlock()
 }
