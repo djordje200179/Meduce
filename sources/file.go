@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"github.com/djordje200179/extendedlibrary/misc"
 	"github.com/djordje200179/meduce"
-	"log"
 	"os"
 )
 
@@ -13,7 +12,7 @@ import (
 func NewFileSource(path string) meduce.Source[int, string] {
 	file, err := os.Open(path)
 	if err != nil {
-		log.Panic(err)
+		panic(err)
 	}
 
 	scanner := bufio.NewScanner(file)
@@ -28,6 +27,11 @@ func NewFileSource(path string) meduce.Source[int, string] {
 			lineIndex++
 		}
 		close(source)
+
+		err := file.Close()
+		if err != nil {
+			panic(err)
+		}
 	}()
 
 	return source
