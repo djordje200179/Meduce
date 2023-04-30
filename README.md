@@ -135,12 +135,14 @@ func main() {
 		},
 	)
 
+	maxValueCollector := collectors.NewSingleValueCollector[string, YearInfo]("max")
+
 	process2 := meduce.NewDefaultProcess(
 		meduce.Config[int, int, string, YearInfo]{
 			Mapper:  MapYearToInfo,
 			Reducer: ReduceMaxYear,
 
-			Collector: collectors.NewStdoutCollector[string, YearInfo](),
+			Collector: maxValueCollector,
 
 			Logger: log.Default(),
 		},
@@ -150,5 +152,8 @@ func main() {
 
 	go process1.Run()
 	process2.WaitToFinish()
+
+	maxValue := maxValueCollector.Get()
+	fmt.Printf("Most movies (%d) were made in %d. year.\n", maxValue.Count, maxValue.Year)
 }
 ```
