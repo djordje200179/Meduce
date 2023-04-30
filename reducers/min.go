@@ -39,7 +39,7 @@ func Min[KeyOut, ValueOut, ValueField any](
 // The reducer requires a getter function that
 // returns the field that should be compared.
 func MinOrdered[KeyOut, ValueOut any, ValueField constraints.Ordered](getter func(value ValueOut) ValueField) meduce.Reducer[KeyOut, ValueOut] {
-	return Min[KeyOut, ValueOut, ValueField](getter, comparison.Descending[ValueField])
+	return Min[KeyOut, ValueOut, ValueField](getter, comparison.ReverseCompare[ValueField])
 }
 
 // MinPrimitive is a reducer that returns the minimum

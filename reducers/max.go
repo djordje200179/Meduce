@@ -39,7 +39,7 @@ func Max[KeyOut, ValueOut, ValueField any](
 // The reducer requires a getter function that
 // returns the field that should be compared.
 func MaxOrdered[KeyOut, ValueOut any, ValueField constraints.Ordered](getter func(value ValueOut) ValueField) meduce.Reducer[KeyOut, ValueOut] {
-	return Max[KeyOut, ValueOut, ValueField](getter, comparison.Ascending[ValueField])
+	return Max[KeyOut, ValueOut, ValueField](getter, comparison.Compare[ValueField])
 }
 
 // MaxPrimitive is a reducer that returns the maximum
