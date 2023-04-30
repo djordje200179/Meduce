@@ -4,12 +4,13 @@ import (
 	"github.com/djordje200179/extendedlibrary/misc/functions/comparison"
 	"sort"
 	"sync"
+	"sync/atomic"
 )
 
 func mappingThread[KeyIn, ValueIn, KeyOut, ValueOut any](
 	config *Config[KeyIn, ValueIn, KeyOut, ValueOut],
 	keysPlace *[]KeyOut, valuesPlace *[]ValueOut,
-	finishSignal *sync.WaitGroup,
+	mappingsFinished *atomic.Uint64, finishSignal *sync.WaitGroup,
 ) {
 	mappedData := mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut]{
 		Config: config,
@@ -17,6 +18,7 @@ func mappingThread[KeyIn, ValueIn, KeyOut, ValueOut any](
 
 	for pair := range config.Source {
 		config.Mapper(pair.First, pair.Second, mappedData.append)
+		mappingsFinished.Add(1)
 	}
 
 	sort.Sort(&mappedData)
