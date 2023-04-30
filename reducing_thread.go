@@ -12,24 +12,24 @@ type reducingDataGroup[KeyOut, ValueOut any] struct {
 }
 
 func reducingThread[KeyIn, ValueIn, KeyOut, ValueOut any](
-	config *Config[KeyIn, ValueIn, KeyOut, ValueOut],
+	process *Process[KeyIn, ValueIn, KeyOut, ValueOut],
 	dataPool <-chan reducingDataGroup[KeyOut, ValueOut],
-	collect func(key KeyOut, value ValueOut), finishSignal *sync.WaitGroup,
+	finishSignal *sync.WaitGroup,
 ) {
 	for groupData := range dataPool {
 		var reducedValue ValueOut
 		if len(groupData.values) == 1 {
 			reducedValue = groupData.values[0]
 		} else {
-			reducedValue = config.Reducer(groupData.key, groupData.values)
+			reducedValue = process.Reducer(groupData.key, groupData.values)
 		}
 
-		if config.Finalizer != nil {
-			config.Finalizer(groupData.key, &reducedValue)
+		if process.Finalizer != nil {
+			process.Finalizer(groupData.key, &reducedValue)
 		}
 
-		if config.Filter == nil || config.Filter(groupData.key, &reducedValue) {
-			collect(groupData.key, reducedValue)
+		if process.Filter == nil || process.Filter(groupData.key, &reducedValue) {
+			process.collectorWrapper(groupData.key, reducedValue)
 		}
 	}
 

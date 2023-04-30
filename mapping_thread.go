@@ -4,26 +4,25 @@ import (
 	"github.com/djordje200179/extendedlibrary/misc/functions/comparison"
 	"sort"
 	"sync"
-	"sync/atomic"
 )
 
 func mappingThread[KeyIn, ValueIn, KeyOut, ValueOut any](
-	config *Config[KeyIn, ValueIn, KeyOut, ValueOut],
+	process *Process[KeyIn, ValueIn, KeyOut, ValueOut],
 	keysPlace *[]KeyOut, valuesPlace *[]ValueOut,
-	mappingsFinished, reductionsFinished *atomic.Uint64, finishSignal *sync.WaitGroup,
+	finishSignal *sync.WaitGroup,
 ) {
 	mappedData := mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut]{
-		Config: config,
+		Process: process,
 	}
 
-	for pair := range config.Source {
-		config.Mapper(pair.First, pair.Second, mappedData.append)
-		mappingsFinished.Add(1)
+	for pair := range process.Source {
+		process.Mapper(pair.First, pair.Second, mappedData.append)
+		process.mappingsFinished.Add(1)
 	}
 
 	sort.Sort(&mappedData)
 
-	uniqueKeys, combinedValues := mappedData.combine(reductionsFinished)
+	uniqueKeys, combinedValues := mappedData.combine()
 
 	*keysPlace = uniqueKeys
 	*valuesPlace = combinedValues
@@ -32,7 +31,7 @@ func mappingThread[KeyIn, ValueIn, KeyOut, ValueOut any](
 }
 
 type mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
-	*Config[KeyIn, ValueIn, KeyOut, ValueOut]
+	*Process[KeyIn, ValueIn, KeyOut, ValueOut]
 
 	keys   []KeyOut
 	values []ValueOut
@@ -66,7 +65,7 @@ func (data *mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut]) Swap(i, j int) 
 	data.values[i], data.values[j] = data.values[j], data.values[i]
 }
 
-func (data *mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut]) combine(reductionsFinished *atomic.Uint64) ([]KeyOut, []ValueOut) {
+func (data *mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut]) combine() ([]KeyOut, []ValueOut) {
 	if len(data.keys) == 0 {
 		return nil, nil
 	}
@@ -103,7 +102,7 @@ func (data *mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut]) combine(reducti
 		uniqueKeys = append(uniqueKeys, lastKey)
 		combinedValues = append(combinedValues, reducedValue)
 
-		reductionsFinished.Add(1)
+		data.reductionsFinished.Add(1)
 	}
 
 	return uniqueKeys, combinedValues

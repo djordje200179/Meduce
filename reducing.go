@@ -30,11 +30,7 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) reduceData() {
 	}
 
 	for i := 0; i < threadsCount; i++ {
-		go reducingThread(
-			&process.Config,
-			readyDataPool,
-			process.collectorWrapper, &barrier,
-		)
+		go reducingThread(process, readyDataPool, &barrier)
 	}
 
 	barrier.Wait()
