@@ -9,7 +9,6 @@ import (
 	"golang.org/x/exp/constraints"
 	"log"
 	"sync"
-	"sync/atomic"
 )
 
 // A Config is a configuration for a single MapReduce task.
@@ -47,9 +46,6 @@ type Process[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
 
 	collectingMutex sync.Mutex
 	linkBuffer      chan misc.Pair[KeyOut, ValueOut]
-
-	mappingsFinished   atomic.Uint64
-	reductionsFinished atomic.Uint64
 
 	processFinished sync.WaitGroup
 
@@ -133,16 +129,7 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) Run() {
 	}
 
 	process.mapData()
-	if process.Logger != nil {
-		process.Logger.Printf(
-			"Process %d: mapping phase finished, %d mappings and %d reductions were made\n",
-			process.uid, process.MappingsFinished(), process.reductionsFinished.Load())
-	}
-
 	process.reduceData()
-	if process.Logger != nil {
-		process.Logger.Printf("Process %d: reductions finished\n", process.uid)
-	}
 
 	process.processFinished.Done()
 }
@@ -152,10 +139,4 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) WaitToFinish() Collect
 	process.processFinished.Wait()
 
 	return process.Collector
-}
-
-// MappingsFinished returns the number of mappings that
-// have been finished so far.
-func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) MappingsFinished() uint {
-	return uint(process.mappingsFinished.Load())
 }

@@ -1,8 +1,10 @@
 package meduce
 
 import (
+	"fmt"
 	"github.com/djordje200179/extendedlibrary/misc/functions"
 	"github.com/djordje200179/extendedlibrary/misc/functions/comparison"
+	"strings"
 	"sync"
 )
 
@@ -16,12 +18,16 @@ func reducingThread[KeyIn, ValueIn, KeyOut, ValueOut any](
 	dataPool <-chan reducingDataGroup[KeyOut, ValueOut],
 	finishSignal *sync.WaitGroup,
 ) {
+	reductionsCount := 0
+	collectionsCount := 0
+
 	for groupData := range dataPool {
 		var reducedValue ValueOut
 		if len(groupData.values) == 1 {
 			reducedValue = groupData.values[0]
 		} else {
 			reducedValue = process.Reducer(groupData.key, groupData.values)
+			reductionsCount++
 		}
 
 		if process.Finalizer != nil {
@@ -30,7 +36,18 @@ func reducingThread[KeyIn, ValueIn, KeyOut, ValueOut any](
 
 		if process.Filter == nil || process.Filter(groupData.key, &reducedValue) {
 			process.collect(groupData.key, reducedValue)
+			collectionsCount++
 		}
+	}
+
+	if process.Logger != nil {
+		var sb strings.Builder
+
+		sb.WriteString(fmt.Sprintf("Process %d: reducing thread finished\n", process.uid))
+		sb.WriteString(fmt.Sprintf("\t%d reductions finished\n", reductionsCount))
+		sb.WriteString(fmt.Sprintf("\t%d collections finished\n", collectionsCount))
+
+		process.Logger.Print(sb.String())
 	}
 
 	finishSignal.Done()

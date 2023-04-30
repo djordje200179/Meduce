@@ -33,7 +33,15 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) reduceData() {
 		go reducingThread(process, readyDataPool, &barrier)
 	}
 
+	if process.Logger != nil {
+		process.Logger.Printf("Process %d: %d reducing threads were started\n", process.uid, threadsCount)
+	}
+
 	barrier.Wait()
+
+	if process.Logger != nil {
+		process.Logger.Printf("Process %d: all reducing threads finished\n", process.uid)
+	}
 }
 
 func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) collect(key KeyOut, value ValueOut) {

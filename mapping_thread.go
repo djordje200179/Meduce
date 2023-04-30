@@ -1,8 +1,10 @@
 package meduce
 
 import (
+	"fmt"
 	"github.com/djordje200179/extendedlibrary/misc/functions/comparison"
 	"sort"
+	"strings"
 	"sync"
 )
 
@@ -15,9 +17,11 @@ func mappingThread[KeyIn, ValueIn, KeyOut, ValueOut any](
 		Process: process,
 	}
 
+	mappingsCount := 0
+
 	for pair := range process.Source {
 		process.Mapper(pair.First, pair.Second, mappedData.append)
-		process.mappingsFinished.Add(1)
+		mappingsCount++
 	}
 
 	sort.Sort(&mappedData)
@@ -26,6 +30,17 @@ func mappingThread[KeyIn, ValueIn, KeyOut, ValueOut any](
 
 	*keysPlace = uniqueKeys
 	*valuesPlace = combinedValues
+
+	if process.Logger != nil {
+		var sb strings.Builder
+
+		sb.WriteString(fmt.Sprintf("Process %d: mapping thread finished\n", process.uid))
+		sb.WriteString(fmt.Sprintf("\t%d mappings finished\n", mappingsCount))
+		sb.WriteString(fmt.Sprintf("\t%d emmited key-value pairs\n", mappedData.Len()))
+		sb.WriteString(fmt.Sprintf("\t%d unique keys\n", len(uniqueKeys)))
+
+		process.Logger.Print(sb.String())
+	}
 
 	finishSignal.Done()
 }
@@ -101,8 +116,6 @@ func (data *mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut]) combine() ([]Ke
 
 		uniqueKeys = append(uniqueKeys, lastKey)
 		combinedValues = append(combinedValues, reducedValue)
-
-		data.reductionsFinished.Add(1)
 	}
 
 	return uniqueKeys, combinedValues
