@@ -6,16 +6,16 @@ import (
 	"sync"
 )
 
-type StdOutCollector[KeyOut, ValueOut any] struct {
-	mutex sync.Mutex
+var stdoutMutex sync.Mutex
 
+type StdoutCollector[KeyOut, ValueOut any] struct {
 	formatter Formatter[KeyOut, ValueOut]
 }
 
 // NewStdoutCollector creates a new FileCollector
 // that writes key-value pairs to the standard output.
 func NewStdoutCollector[KeyOut, ValueOut any]() meduce.Collector[KeyOut, ValueOut] {
-	collector := &StdOutCollector[KeyOut, ValueOut]{}
+	collector := StdoutCollector[KeyOut, ValueOut]{}
 
 	return collector
 }
@@ -26,18 +26,18 @@ func NewStdoutCollector[KeyOut, ValueOut any]() meduce.Collector[KeyOut, ValueOu
 func NewStdoutCollectorWithFormatter[KeyOut, ValueOut any](
 	formatter Formatter[KeyOut, ValueOut],
 ) meduce.Collector[KeyOut, ValueOut] {
-	collector := &StdOutCollector[KeyOut, ValueOut]{
+	collector := StdoutCollector[KeyOut, ValueOut]{
 		formatter: formatter,
 	}
 
 	return collector
 }
 
-func (collector *StdOutCollector[KeyOut, ValueOut]) Init() {
-	collector.mutex.Lock()
+func (collector StdoutCollector[KeyOut, ValueOut]) Init() {
+	stdoutMutex.Lock()
 }
 
-func (collector *StdOutCollector[KeyOut, ValueOut]) Collect(key KeyOut, value ValueOut) {
+func (collector StdoutCollector[KeyOut, ValueOut]) Collect(key KeyOut, value ValueOut) {
 	var line string
 	if collector.formatter != nil {
 		line = collector.formatter(key, value)
@@ -48,6 +48,6 @@ func (collector *StdOutCollector[KeyOut, ValueOut]) Collect(key KeyOut, value Va
 	fmt.Print(line)
 }
 
-func (collector *StdOutCollector[KeyOut, ValueOut]) Finalize() {
-	collector.mutex.Unlock()
+func (collector StdoutCollector[KeyOut, ValueOut]) Finalize() {
+	stdoutMutex.Unlock()
 }
