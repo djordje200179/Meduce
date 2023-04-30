@@ -8,13 +8,16 @@ import (
 )
 
 func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) reduceData() {
-	threadsCount := runtime.NumCPU()
+	groupsCount := process.estimateGroupsCount()
 
-	var barrier sync.WaitGroup
-	barrier.Add(threadsCount)
+	var threadsCount int
+	if groupsCount > runtime.NumCPU()*10 {
+		threadsCount = runtime.NumCPU()
+	} else {
+		threadsCount = (groupsCount + 9) / 10
+	}
 
-	readyDataPool := make(chan reducingDataGroup[KeyOut, ValueOut], 100*threadsCount)
-
+	readyDataPool := make(chan reducingDataGroup[KeyOut, ValueOut], groupsCount)
 	go reducingDataGenerationThread(
 		process.KeyComparator,
 		process.mappedKeys, process.mappedValues,
@@ -29,8 +32,10 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) reduceData() {
 		defer close(process.linkBuffer)
 	}
 
-	process.reducingThreads = make([]reducingThread[KeyIn, ValueIn, KeyOut, ValueOut], threadsCount)
+	var barrier sync.WaitGroup
+	barrier.Add(threadsCount)
 
+	process.reducingThreads = make([]reducingThread[KeyIn, ValueIn, KeyOut, ValueOut], threadsCount)
 	for i := range process.reducingThreads {
 		process.reducingThreads[i].Process = process
 
@@ -60,4 +65,16 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) collect(key KeyOut, va
 	}
 
 	process.Collector.Collect(key, value)
+}
+
+func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) estimateGroupsCount() int {
+	var combinationsCount int
+
+	for _, thread := range process.mappingThreads {
+		if thread.combinationsCount > combinationsCount {
+			combinationsCount = thread.combinationsCount
+		}
+	}
+
+	return combinationsCount
 }
