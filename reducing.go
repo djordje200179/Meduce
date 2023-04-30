@@ -36,7 +36,7 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) reduceData() {
 	barrier.Wait()
 }
 
-func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) collectorWrapper(key KeyOut, value ValueOut) {
+func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) collect(key KeyOut, value ValueOut) {
 	if process.Collector == nil {
 		process.linkBuffer <- misc.Pair[KeyOut, ValueOut]{key, value}
 		return

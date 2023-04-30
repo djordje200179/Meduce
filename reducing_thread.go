@@ -29,7 +29,7 @@ func reducingThread[KeyIn, ValueIn, KeyOut, ValueOut any](
 		}
 
 		if process.Filter == nil || process.Filter(groupData.key, &reducedValue) {
-			process.collectorWrapper(groupData.key, reducedValue)
+			process.collect(groupData.key, reducedValue)
 		}
 	}
 
