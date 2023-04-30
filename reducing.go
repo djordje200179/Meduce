@@ -43,7 +43,14 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) reduceData() {
 	}
 
 	if process.Logger != nil {
-		process.Logger.Printf("Process %d: %d reducing threads were started\n", process.uid, threadsCount)
+		var message string
+		if threadsCount == 1 {
+			message = "Process %d: 1 reducing thread was started\n"
+		} else {
+			message = "Process %d: %d reducing threads were started\n"
+		}
+
+		process.Logger.Printf(message, process.uid, threadsCount)
 	}
 
 	barrier.Wait()

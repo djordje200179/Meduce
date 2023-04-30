@@ -23,7 +23,14 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) mapData() {
 	}
 
 	if process.Logger != nil {
-		process.Logger.Printf("Process %d: %d mapping threads were started\n", process.uid, threadsCount)
+		var message string
+		if threadsCount == 1 {
+			message = "Process %d: 1 mapping thread was started\n"
+		} else {
+			message = "Process %d: %d mapping threads were started\n"
+		}
+
+		process.Logger.Printf(message, process.uid, threadsCount)
 	}
 
 	allMappersFinished.Wait()
