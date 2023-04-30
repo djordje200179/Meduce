@@ -13,15 +13,12 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) mapData() {
 	var allMappersFinished sync.WaitGroup
 	allMappersFinished.Add(threadsCount)
 
-	keysArrays := make([][]KeyOut, threadsCount)
-	valuesArrays := make([][]ValueOut, threadsCount)
+	process.mappingThreads = make([]mappingThread[KeyIn, ValueIn, KeyOut, ValueOut], threadsCount)
 
-	for i := 0; i < threadsCount; i++ {
-		go mappingThread(
-			process,
-			&keysArrays[i], &valuesArrays[i],
-			&allMappersFinished,
-		)
+	for i := range process.mappingThreads {
+		process.mappingThreads[i].Process = process
+
+		go process.mappingThreads[i].run(&allMappersFinished)
 	}
 
 	if process.Logger != nil {
@@ -34,9 +31,17 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) mapData() {
 		process.Logger.Printf("Process %d: all mapping threads finished\n", process.uid)
 	}
 
-	process.mappedKeys, process.mappedValues = mergeMappedData(
+	var keysArray [][]KeyOut
+	var valuesArray [][]ValueOut
+
+	for i := range process.mappingThreads {
+		keysArray = append(keysArray, process.mappingThreads[i].keys)
+		valuesArray = append(valuesArray, process.mappingThreads[i].values)
+	}
+
+	process.mappedKeys, process.mappedValues = mergeMappingThreadsData(
 		process.KeyComparator, process.ValueComparator,
-		keysArrays, valuesArrays,
+		keysArray, valuesArray,
 	)
 
 	if process.Logger != nil {

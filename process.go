@@ -41,6 +41,9 @@ type Process[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
 
 	Config[KeyIn, ValueIn, KeyOut, ValueOut]
 
+	mappingThreads  []mappingThread[KeyIn, ValueIn, KeyOut, ValueOut]
+	reducingThreads []reducingThread[KeyIn, ValueIn, KeyOut, ValueOut]
+
 	mappedKeys   []KeyOut
 	mappedValues []ValueOut
 

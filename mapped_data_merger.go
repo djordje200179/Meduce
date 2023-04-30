@@ -5,7 +5,7 @@ import (
 	"github.com/djordje200179/extendedlibrary/misc/functions/comparison"
 )
 
-func mergeMappedData[KeyOut, ValueOut any](
+func mergeMappingThreadsData[KeyOut, ValueOut any](
 	keyComparator functions.Comparator[KeyOut], valueComparator functions.Comparator[ValueOut],
 	keysArrays [][]KeyOut, valuesArrays [][]ValueOut,
 ) ([]KeyOut, []ValueOut) {

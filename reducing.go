@@ -29,8 +29,12 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) reduceData() {
 		defer close(process.linkBuffer)
 	}
 
-	for i := 0; i < threadsCount; i++ {
-		go reducingThread(process, readyDataPool, &barrier)
+	process.reducingThreads = make([]reducingThread[KeyIn, ValueIn, KeyOut, ValueOut], threadsCount)
+
+	for i := range process.reducingThreads {
+		process.reducingThreads[i].Process = process
+
+		go process.reducingThreads[i].run(readyDataPool, &barrier)
 	}
 
 	if process.Logger != nil {

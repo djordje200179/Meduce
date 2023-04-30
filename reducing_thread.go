@@ -13,41 +13,45 @@ type reducingDataGroup[KeyOut, ValueOut any] struct {
 	values []ValueOut
 }
 
-func reducingThread[KeyIn, ValueIn, KeyOut, ValueOut any](
-	process *Process[KeyIn, ValueIn, KeyOut, ValueOut],
+type reducingThread[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
+	*Process[KeyIn, ValueIn, KeyOut, ValueOut]
+
+	reductionsCount  int
+	collectionsCount int
+}
+
+func (thread *reducingThread[KeyIn, ValueIn, KeyOut, ValueOut]) run(
 	dataPool <-chan reducingDataGroup[KeyOut, ValueOut],
 	finishSignal *sync.WaitGroup,
 ) {
-	reductionsCount := 0
-	collectionsCount := 0
-
 	for groupData := range dataPool {
 		var reducedValue ValueOut
 		if len(groupData.values) == 1 {
 			reducedValue = groupData.values[0]
 		} else {
-			reducedValue = process.Reducer(groupData.key, groupData.values)
-			reductionsCount++
+			reducedValue = thread.Reducer(groupData.key, groupData.values)
 		}
 
-		if process.Finalizer != nil {
-			process.Finalizer(groupData.key, &reducedValue)
+		thread.reductionsCount++
+
+		if thread.Finalizer != nil {
+			thread.Finalizer(groupData.key, &reducedValue)
 		}
 
-		if process.Filter == nil || process.Filter(groupData.key, &reducedValue) {
-			process.collect(groupData.key, reducedValue)
-			collectionsCount++
+		if thread.Filter == nil || thread.Filter(groupData.key, &reducedValue) {
+			thread.collect(groupData.key, reducedValue)
+			thread.collectionsCount++
 		}
 	}
 
-	if process.Logger != nil {
+	if thread.Logger != nil {
 		var sb strings.Builder
 
-		sb.WriteString(fmt.Sprintf("Process %d: reducing thread finished\n", process.uid))
-		sb.WriteString(fmt.Sprintf("\t%d reductions finished\n", reductionsCount))
-		sb.WriteString(fmt.Sprintf("\t%d collections finished\n", collectionsCount))
+		sb.WriteString(fmt.Sprintf("Process %d: reducing thread finished\n", thread.uid))
+		sb.WriteString(fmt.Sprintf("\t%d reductions finished\n", thread.reductionsCount))
+		sb.WriteString(fmt.Sprintf("\t%d collections finished\n", thread.reductionsCount))
 
-		process.Logger.Print(sb.String())
+		thread.Logger.Print(sb.String())
 	}
 
 	finishSignal.Done()

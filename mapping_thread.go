@@ -8,94 +8,89 @@ import (
 	"sync"
 )
 
-func mappingThread[KeyIn, ValueIn, KeyOut, ValueOut any](
-	process *Process[KeyIn, ValueIn, KeyOut, ValueOut],
-	keysPlace *[]KeyOut, valuesPlace *[]ValueOut,
-	finishSignal *sync.WaitGroup,
-) {
-	mappedData := mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut]{
-		Process: process,
+type mappingThread[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
+	*Process[KeyIn, ValueIn, KeyOut, ValueOut]
+
+	keys   []KeyOut
+	values []ValueOut
+
+	mappingsCount     int
+	emittingsCount    int
+	combinationsCount int
+}
+
+func (thread *mappingThread[KeyIn, ValueIn, KeyOut, ValueOut]) run(finishSignal *sync.WaitGroup) {
+	for pair := range thread.Source {
+		thread.Mapper(pair.First, pair.Second, thread.append)
+		thread.mappingsCount++
 	}
 
-	mappingsCount := 0
+	thread.emittingsCount = thread.Len()
 
-	for pair := range process.Source {
-		process.Mapper(pair.First, pair.Second, mappedData.append)
-		mappingsCount++
-	}
+	sort.Sort(thread)
 
-	sort.Sort(&mappedData)
+	thread.combine()
 
-	uniqueKeys, combinedValues := mappedData.combine()
+	thread.combinationsCount = thread.Len()
 
-	*keysPlace = uniqueKeys
-	*valuesPlace = combinedValues
-
-	if process.Logger != nil {
+	if thread.Logger != nil {
 		var sb strings.Builder
 
-		sb.WriteString(fmt.Sprintf("Process %d: mapping thread finished\n", process.uid))
-		sb.WriteString(fmt.Sprintf("\t%d mappings finished\n", mappingsCount))
-		sb.WriteString(fmt.Sprintf("\t%d emmited key-value pairs\n", mappedData.Len()))
-		sb.WriteString(fmt.Sprintf("\t%d unique keys\n", len(uniqueKeys)))
+		sb.WriteString(fmt.Sprintf("Process %d: mapping thread finished\n", thread.uid))
+		sb.WriteString(fmt.Sprintf("\t%d mappings finished\n", thread.mappingsCount))
+		sb.WriteString(fmt.Sprintf("\t%d emmited key-value pairs\n", thread.emittingsCount))
+		sb.WriteString(fmt.Sprintf("\t%d unique keys\n", thread.combinationsCount))
 
-		process.Logger.Print(sb.String())
+		thread.Logger.Print(sb.String())
 	}
 
 	finishSignal.Done()
 }
 
-type mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
-	*Process[KeyIn, ValueIn, KeyOut, ValueOut]
-
-	keys   []KeyOut
-	values []ValueOut
+func (thread *mappingThread[KeyIn, ValueIn, KeyOut, ValueOut]) append(key KeyOut, value ValueOut) {
+	thread.keys = append(thread.keys, key)
+	thread.values = append(thread.values, value)
+}
+func (thread *mappingThread[KeyIn, ValueIn, KeyOut, ValueOut]) Len() int {
+	return len(thread.keys)
 }
 
-func (data *mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut]) append(key KeyOut, value ValueOut) {
-	data.keys = append(data.keys, key)
-	data.values = append(data.values, value)
-}
-func (data *mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut]) Len() int {
-	return len(data.keys)
-}
-
-func (data *mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut]) Less(i, j int) bool {
-	keyComparisonResult := data.KeyComparator(data.keys[i], data.keys[j])
+func (thread *mappingThread[KeyIn, ValueIn, KeyOut, ValueOut]) Less(i, j int) bool {
+	keyComparisonResult := thread.KeyComparator(thread.keys[i], thread.keys[j])
 
 	if keyComparisonResult == comparison.FirstSmaller {
 		return true
 	} else if keyComparisonResult == comparison.Equal {
-		if data.ValueComparator == nil {
+		if thread.ValueComparator == nil {
 			return false
 		}
-		return data.ValueComparator(data.values[i], data.values[j]) == comparison.FirstSmaller
+		return thread.ValueComparator(thread.values[i], thread.values[j]) == comparison.FirstSmaller
 	} else {
 		return false
 	}
 }
 
-func (data *mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut]) Swap(i, j int) {
-	data.keys[i], data.keys[j] = data.keys[j], data.keys[i]
-	data.values[i], data.values[j] = data.values[j], data.values[i]
+func (thread *mappingThread[KeyIn, ValueIn, KeyOut, ValueOut]) Swap(i, j int) {
+	thread.keys[i], thread.keys[j] = thread.keys[j], thread.keys[i]
+	thread.values[i], thread.values[j] = thread.values[j], thread.values[i]
 }
 
-func (data *mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut]) combine() ([]KeyOut, []ValueOut) {
-	if len(data.keys) == 0 {
-		return nil, nil
+func (thread *mappingThread[KeyIn, ValueIn, KeyOut, ValueOut]) combine() {
+	if len(thread.keys) == 0 {
+		return
 	}
 
 	uniqueKeys := make([]KeyOut, 0)
 	combinedValues := make([]ValueOut, 0)
 
 	lastIndex := -1
-	for i := 1; i <= data.Len(); i++ {
-		lastKey := data.keys[i-1]
+	for i := 1; i <= thread.Len(); i++ {
+		lastKey := thread.keys[i-1]
 
-		if i != data.Len() {
-			currentKey := data.keys[i]
+		if i != thread.Len() {
+			currentKey := thread.keys[i]
 
-			if data.KeyComparator(lastKey, currentKey) == comparison.Equal {
+			if thread.KeyComparator(lastKey, currentKey) == comparison.Equal {
 				continue
 			}
 		}
@@ -104,19 +99,20 @@ func (data *mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut]) combine() ([]Ke
 		lastIndex = i - 1
 
 		if firstIndex == lastIndex {
-			value := data.values[firstIndex]
+			value := thread.values[firstIndex]
 			uniqueKeys = append(uniqueKeys, lastKey)
 			combinedValues = append(combinedValues, value)
 
 			continue
 		}
 
-		validValues := data.values[firstIndex : lastIndex+1]
-		reducedValue := data.Config.Reducer(lastKey, validValues)
+		validValues := thread.values[firstIndex : lastIndex+1]
+		reducedValue := thread.Config.Reducer(lastKey, validValues)
 
 		uniqueKeys = append(uniqueKeys, lastKey)
 		combinedValues = append(combinedValues, reducedValue)
 	}
 
-	return uniqueKeys, combinedValues
+	thread.keys = uniqueKeys
+	thread.values = combinedValues
 }
