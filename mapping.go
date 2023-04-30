@@ -18,7 +18,7 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) mapData() {
 		go mappingThread(
 			&process.Config,
 			&keysArrays[i], &valuesArrays[i],
-			&process.mappingsFinished, &allMappersFinished,
+			&process.mappingsFinished, &process.reductionsFinished, &allMappersFinished,
 		)
 	}
 

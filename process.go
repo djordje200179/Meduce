@@ -48,8 +48,10 @@ type Process[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
 	collectingMutex sync.Mutex
 	linkBuffer      chan misc.Pair[KeyOut, ValueOut]
 
-	mappingsFinished atomic.Uint64
-	processFinished  sync.WaitGroup
+	mappingsFinished   atomic.Uint64
+	reductionsFinished atomic.Uint64
+
+	processFinished sync.WaitGroup
 
 	runNext func()
 }
@@ -127,17 +129,19 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) Run() {
 	}
 
 	if process.Logger != nil {
-		process.Logger.Printf("Process %d: started", process.uid)
+		process.Logger.Printf("Process %d: started\n", process.uid)
 	}
 
 	process.mapData()
 	if process.Logger != nil {
-		process.Logger.Printf("Process %d: mappings finished", process.uid)
+		process.Logger.Printf(
+			"Process %d: mapping phase finished, %d mappings and %d reductions were made\n",
+			process.uid, process.MappingsFinished(), process.reductionsFinished.Load())
 	}
 
 	process.reduceData()
 	if process.Logger != nil {
-		process.Logger.Printf("Process %d: reductions finished", process.uid)
+		process.Logger.Printf("Process %d: reductions finished\n", process.uid)
 	}
 
 	process.processFinished.Done()

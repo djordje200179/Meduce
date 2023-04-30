@@ -10,7 +10,7 @@ import (
 func mappingThread[KeyIn, ValueIn, KeyOut, ValueOut any](
 	config *Config[KeyIn, ValueIn, KeyOut, ValueOut],
 	keysPlace *[]KeyOut, valuesPlace *[]ValueOut,
-	mappingsFinished *atomic.Uint64, finishSignal *sync.WaitGroup,
+	mappingsFinished, reductionsFinished *atomic.Uint64, finishSignal *sync.WaitGroup,
 ) {
 	mappedData := mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut]{
 		Config: config,
@@ -23,7 +23,7 @@ func mappingThread[KeyIn, ValueIn, KeyOut, ValueOut any](
 
 	sort.Sort(&mappedData)
 
-	uniqueKeys, combinedValues := mappedData.combine()
+	uniqueKeys, combinedValues := mappedData.combine(reductionsFinished)
 
 	*keysPlace = uniqueKeys
 	*valuesPlace = combinedValues
@@ -66,7 +66,7 @@ func (data *mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut]) Swap(i, j int) 
 	data.values[i], data.values[j] = data.values[j], data.values[i]
 }
 
-func (data *mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut]) combine() ([]KeyOut, []ValueOut) {
+func (data *mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut]) combine(reductionsFinished *atomic.Uint64) ([]KeyOut, []ValueOut) {
 	if len(data.keys) == 0 {
 		return nil, nil
 	}
@@ -102,6 +102,8 @@ func (data *mappingThreadData[KeyIn, ValueIn, KeyOut, ValueOut]) combine() ([]Ke
 
 		uniqueKeys = append(uniqueKeys, lastKey)
 		combinedValues = append(combinedValues, reducedValue)
+
+		reductionsFinished.Add(1)
 	}
 
 	return uniqueKeys, combinedValues
