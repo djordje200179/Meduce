@@ -62,6 +62,10 @@ will be started automatically.
 If you want to wait for all processes to finish, you can wait for the
 last one to finish by calling `WaitToFinish()` method on it.
 
+### Common reducers
+In the `reducers` package, you can find some common reducers that 
+you can use in your processes.
+
 ## Example
 In this example, we're using IMDB title_basics dataset (can be found [here](https://datasets.imdbws.com/)) 
 to find out in which year the most movies were released. 
@@ -140,7 +144,7 @@ func main() {
 	process2 := meduce.NewDefaultProcess(
 		meduce.Config[int, int, string, YearInfo]{
 			Mapper:  MapYearToInfo,
-			Reducer: ReduceMaxYear,
+			Reducer: reducers.MaxOrdered[string, YearInfo, int](func(info YearInfo) int { return info.Count }),
 
 			Collector: maxValueCollector,
 
