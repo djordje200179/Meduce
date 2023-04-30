@@ -35,6 +35,7 @@ func (collector *SingleValueCollector[KeyOut, ValueOut]) Finalize() {
 }
 
 // Get returns the collected key-value pair.
+// If no key-value pair was collected, panics.
 func (collector *SingleValueCollector[KeyOut, ValueOut]) Get() (KeyOut, ValueOut) {
 	if !collector.set {
 		panic("No value collected")
@@ -43,6 +44,8 @@ func (collector *SingleValueCollector[KeyOut, ValueOut]) Get() (KeyOut, ValueOut
 	return collector.key, collector.value
 }
 
+// Key returns the collected key.
+// If no key-value pair was collected, panics.
 func (collector *SingleValueCollector[KeyOut, ValueOut]) Key() KeyOut {
 	if !collector.set {
 		panic("No value collected")
@@ -51,6 +54,8 @@ func (collector *SingleValueCollector[KeyOut, ValueOut]) Key() KeyOut {
 	return collector.key
 }
 
+// Value returns the collected value.
+// If no key-value pair was collected, panics.
 func (collector *SingleValueCollector[KeyOut, ValueOut]) Value() ValueOut {
 	if !collector.set {
 		panic("No value collected")
