@@ -2,6 +2,7 @@ package meduce
 
 import (
 	"fmt"
+	"github.com/djordje200179/extendedlibrary/misc/functions/comparison"
 	"runtime"
 	"strings"
 	"sync"
@@ -31,18 +32,11 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) mapData() {
 		process.Logger.Printf("Process %d: all mapping threads finished\n", process.uid)
 	}
 
-	var keysArray [][]KeyOut
-	var valuesArray [][]ValueOut
-
+	process.mergeMappedData()
 	for i := range process.mappingThreads {
-		keysArray = append(keysArray, process.mappingThreads[i].keys)
-		valuesArray = append(valuesArray, process.mappingThreads[i].values)
+		process.mappingThreads[i].keys = nil
+		process.mappingThreads[i].values = nil
 	}
-
-	process.mappedKeys, process.mappedValues = mergeMappingThreadsData(
-		process.KeyComparator, process.ValueComparator,
-		keysArray, valuesArray,
-	)
 
 	if process.Logger != nil {
 		var sb strings.Builder
@@ -51,5 +45,43 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) mapData() {
 		sb.WriteString(fmt.Sprintf("\t%d key-value pairs left\n", len(process.mappedKeys)))
 
 		process.Logger.Print(sb.String())
+	}
+}
+
+func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) mergeMappedData() {
+	entriesCount := 0
+	for _, thread := range process.mappingThreads {
+		entriesCount += len(thread.keys)
+	}
+
+	process.mappedKeys = make([]KeyOut, entriesCount)
+	process.mappedValues = make([]ValueOut, entriesCount)
+
+	indices := make([]int, len(process.mappingThreads))
+	for i := 0; i < entriesCount; i++ {
+		minIndex := -1
+		var minKey KeyOut
+		var minValue ValueOut
+
+		for j, thread := range process.mappingThreads {
+			if indices[j] >= len(thread.keys) {
+				continue
+			}
+
+			currKey := thread.keys[indices[j]]
+			currValue := thread.values[indices[j]]
+			if minIndex == -1 ||
+				process.KeyComparator(currKey, minKey) == comparison.FirstSmaller ||
+				process.KeyComparator(currKey, minKey) == comparison.Equal && process.ValueComparator != nil && process.ValueComparator(currValue, minValue) == comparison.FirstSmaller {
+				minIndex = j
+				minKey = currKey
+				minValue = currValue
+			}
+		}
+
+		process.mappedKeys[i] = minKey
+		process.mappedValues[i] = minValue
+
+		indices[minIndex]++
 	}
 }
