@@ -18,7 +18,7 @@ type FileCollector[KeyOut, ValueOut any] struct {
 
 // NewFileCollector creates a new FileCollector
 // that writes key-value pairs to a file at the given path.
-func NewFileCollector[KeyOut, ValueOut any](path string) meduce.Collector[KeyOut, ValueOut] {
+func NewFileCollector[KeyOut, ValueOut any](path string) FileCollector[KeyOut, ValueOut] {
 	file, err := os.Create(path)
 	if err != nil {
 		panic(err)

@@ -8,6 +8,10 @@ import (
 
 var stdoutMutex sync.Mutex
 
+// StdoutCollector is a collector that writes key-value pairs to the standard output.
+//
+// Zero value of StdoutCollector is a valid collector
+// without any formatter.
 type StdoutCollector[KeyOut, ValueOut any] struct {
 	formatter Formatter[KeyOut, ValueOut]
 }

@@ -3,7 +3,7 @@ package collectors
 import "github.com/djordje200179/extendedlibrary/misc"
 
 // ChannelCollector is a collector that collects key-value pairs into a channel.
-type ChannelCollector[KeyOut, ValueOut any] chan<- misc.Pair[KeyOut, ValueOut]
+type ChannelCollector[KeyOut, ValueOut any] chan misc.Pair[KeyOut, ValueOut]
 
 // NewChannelCollector creates a new ChannelCollector
 // with the specified buffer size.
@@ -21,4 +21,9 @@ func (collector ChannelCollector[KeyOut, ValueOut]) Collect(key KeyOut, value Va
 
 func (collector ChannelCollector[KeyOut, ValueOut]) Finalize() {
 	close(collector)
+}
+
+// Get returns the collected channel.
+func (collector ChannelCollector[KeyOut, ValueOut]) Get() <-chan misc.Pair[KeyOut, ValueOut] {
+	return collector
 }
