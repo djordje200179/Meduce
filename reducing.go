@@ -45,7 +45,7 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) reduceData() {
 	if process.Logger != nil {
 		var message string
 		if threadsCount == 1 {
-			message = "Process %d: 1 reducing thread was started\n"
+			message = "Process %d: %d reducing thread was started\n"
 		} else {
 			message = "Process %d: %d reducing threads were started\n"
 		}

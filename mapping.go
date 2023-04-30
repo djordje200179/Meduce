@@ -25,7 +25,7 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) mapData() {
 	if process.Logger != nil {
 		var message string
 		if threadsCount == 1 {
-			message = "Process %d: 1 mapping thread was started\n"
+			message = "Process %d: %d mapping thread was started\n"
 		} else {
 			message = "Process %d: %d mapping threads were started\n"
 		}
