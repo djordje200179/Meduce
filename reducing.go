@@ -11,10 +11,10 @@ func (process *Process[KeyIn, ValueIn, KeyOut, ValueOut]) reduceData() {
 	groupsCount := process.estimateGroupsCount()
 
 	var threadsCount int
-	if groupsCount > runtime.NumCPU()*10 {
+	if groupsCount > runtime.NumCPU() {
 		threadsCount = runtime.NumCPU()
 	} else {
-		threadsCount = (groupsCount + 9) / 10
+		threadsCount = groupsCount
 	}
 
 	readyDataPool := make(chan reducingDataGroup[KeyOut, ValueOut], groupsCount)
