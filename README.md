@@ -144,7 +144,7 @@ func main() {
 	process2 := meduce.NewDefaultProcess(
 		meduce.Config[int, int, string, YearInfo]{
 			Mapper:  MapYearToInfo,
-			Reducer: reducers.MaxOrdered[string, YearInfo, int](func(info YearInfo) int { return info.Count }),
+			Reducer: reducers.NewMaxOrderedField[string, YearInfo, int](func(info YearInfo) int { return info.Count }),
 
 			Collector: maxValueCollector,
 
