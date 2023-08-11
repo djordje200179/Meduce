@@ -1,5 +1,7 @@
 github.com/djordje200179/extendedlibrary/misc v1.0.2 h1:2U+niie9VZ7foo53AXjHSfKD2OnrmdMWv2Qw02yGGZk=
 github.com/djordje200179/extendedlibrary/misc v1.0.2/go.mod h1:EjyshmXo55S6mpgk6JUcwcmfyDev3r3Gw40O/tAv0KU=
+github.com/djordje200179/extendedlibrary/misc v1.0.4 h1:WIHoSlfWFFAyNz2Ypm/waucO60kb5R057C4/jOPPHVs=
+github.com/djordje200179/extendedlibrary/misc v1.0.4/go.mod h1:EjyshmXo55S6mpgk6JUcwcmfyDev3r3Gw40O/tAv0KU=
 github.com/google/go-cmp v0.5.8 h1:e6P7q2lk1O+qJJb4BtCQXlK8vWEO8V1ZeuEdJNOqZyg=
 github.com/google/go-cmp v0.5.8/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 golang.org/x/mod v0.6.0 h1:b9gGHsz9/HhJ3HF5DHQytPpuwocVTChQJK3AvoLRD5I=

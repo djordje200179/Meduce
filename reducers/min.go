@@ -6,13 +6,14 @@ import (
 	"github.com/djordje200179/meduce"
 )
 
-// Min returns a reducer that returns the minimum
-// value of the values passed to it.
+// NewMinField creates a reducer that returns
+// the value with minimal field.
 //
 // The reducer requires a getter function that
-// returns the field that should be compared
-// by the comparator function.
-func Min[KeyOut, ValueOut, ValueField any](
+// returns fields that are compared.
+// Comparator function is also required
+// for comparing returned fields.
+func NewMinField[KeyOut, ValueOut, ValueField any](
 	getter func(value ValueOut) ValueField,
 	comparator comparison.Comparator[ValueField],
 ) meduce.Reducer[KeyOut, ValueOut] {
@@ -32,13 +33,13 @@ func Min[KeyOut, ValueOut, ValueField any](
 	}
 }
 
-// MinOrdered returns a reducer that returns the minimum
-// value of the values passed to it.
+// NewMinOrderedField creates a reducer that returns
+// the value with minimal field.
 //
 // The reducer requires a getter function that
-// returns the field that should be compared.
-func MinOrdered[KeyOut, ValueOut any, ValueField cmp.Ordered](getter func(value ValueOut) ValueField) meduce.Reducer[KeyOut, ValueOut] {
-	return Min[KeyOut, ValueOut, ValueField](getter, cmp.Compare[ValueField])
+// returns ordered fields that are natively compared.
+func NewMinOrderedField[KeyOut, ValueOut any, ValueField cmp.Ordered](getter func(value ValueOut) ValueField) meduce.Reducer[KeyOut, ValueOut] {
+	return NewMinField[KeyOut, ValueOut, ValueField](getter, cmp.Compare[ValueField])
 }
 
 // MinPrimitive is a reducer that returns the minimum

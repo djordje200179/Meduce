@@ -6,13 +6,16 @@ import (
 	"github.com/djordje200179/meduce"
 )
 
-// Max returns a reducer that returns the maximum
-// value of the values passed to it.
+// NewMaxField creates a reducer that returns
+// the value with maximal field.
 //
 // The reducer requires a getter function that
-// returns the field that should be compared
-// by the comparator function.
-func Max[KeyOut, ValueOut, ValueField any](
+// returns fields that are compared.
+// Comparator function is also required
+// for comparing returned fields.
+// Comparator function is also required
+// for comparing returned fields.
+func NewMaxField[KeyOut, ValueOut, ValueField any](
 	getter func(value ValueOut) ValueField,
 	comparator comparison.Comparator[ValueField],
 ) meduce.Reducer[KeyOut, ValueOut] {
@@ -32,13 +35,13 @@ func Max[KeyOut, ValueOut, ValueField any](
 	}
 }
 
-// MaxOrdered returns a reducer that returns the maximum
-// value of the values passed to it.
+// NewMaxOrderedField creates a reducer that returns
+// the value with maximal field.
 //
 // The reducer requires a getter function that
-// returns the field that should be compared.
-func MaxOrdered[KeyOut, ValueOut any, ValueField cmp.Ordered](getter func(value ValueOut) ValueField) meduce.Reducer[KeyOut, ValueOut] {
-	return Max[KeyOut, ValueOut, ValueField](getter, cmp.Compare[ValueField])
+// returns ordered fields that are natively compared.
+func NewMaxOrderedField[KeyOut, ValueOut any, ValueField cmp.Ordered](getter func(value ValueOut) ValueField) meduce.Reducer[KeyOut, ValueOut] {
+	return NewMaxField[KeyOut, ValueOut, ValueField](getter, cmp.Compare[ValueField])
 }
 
 // MaxPrimitive is a reducer that returns the maximum
