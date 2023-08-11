@@ -15,7 +15,7 @@ type mappingThread[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
 	values []ValueOut
 
 	mappingsCount     int
-	emittingsCount    int
+	emitsCount        int
 	combinationsCount int
 }
 
@@ -25,7 +25,7 @@ func (thread *mappingThread[KeyIn, ValueIn, KeyOut, ValueOut]) run(finishSignal 
 		thread.mappingsCount++
 	}
 
-	thread.emittingsCount = thread.Len()
+	thread.emitsCount = thread.Len()
 
 	sort.Sort(thread)
 
@@ -38,7 +38,7 @@ func (thread *mappingThread[KeyIn, ValueIn, KeyOut, ValueOut]) run(finishSignal 
 
 		sb.WriteString(fmt.Sprintf("Process %d: mapping thread finished\n", thread.uid))
 		sb.WriteString(fmt.Sprintf("\t%d mappings finished\n", thread.mappingsCount))
-		sb.WriteString(fmt.Sprintf("\t%d emmited key-value pairs\n", thread.emittingsCount))
+		sb.WriteString(fmt.Sprintf("\t%d emmited key-value pairs\n", thread.emitsCount))
 		sb.WriteString(fmt.Sprintf("\t%d unique keys\n", thread.combinationsCount))
 
 		thread.Logger.Print(sb.String())

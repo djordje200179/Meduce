@@ -3,10 +3,9 @@
 package meduce
 
 import (
+	"cmp"
 	"github.com/djordje200179/extendedlibrary/misc"
-	"github.com/djordje200179/extendedlibrary/misc/functions"
 	"github.com/djordje200179/extendedlibrary/misc/functions/comparison"
-	"golang.org/x/exp/constraints"
 	"log"
 	"sync"
 )
@@ -17,8 +16,8 @@ type Config[KeyIn, ValueIn, KeyOut, ValueOut any] struct {
 	// before they are passed to the Reducer.
 	// KeyComparator is used as primary comparator,
 	// and ValueComparator is used as secondary.
-	KeyComparator   functions.Comparator[KeyOut]
-	ValueComparator functions.Comparator[ValueOut]
+	KeyComparator   comparison.Comparator[KeyOut]
+	ValueComparator comparison.Comparator[ValueOut]
 
 	Mapper    Mapper[KeyIn, ValueIn, KeyOut, ValueOut]
 	Reducer   Reducer[KeyOut, ValueOut]
@@ -71,10 +70,10 @@ func NewProcess[KeyIn, ValueIn, KeyOut, ValueOut any](config Config[KeyIn, Value
 }
 
 // NewDefaultProcess creates a new Process with default key comparator for ordered keys.
-func NewDefaultProcess[KeyIn, ValueIn any, KeyOut constraints.Ordered, ValueOut any](
+func NewDefaultProcess[KeyIn, ValueIn any, KeyOut cmp.Ordered, ValueOut any](
 	config Config[KeyIn, ValueIn, KeyOut, ValueOut],
 ) *Process[KeyIn, ValueIn, KeyOut, ValueOut] {
-	config.KeyComparator = comparison.Ascending[KeyOut]
+	config.KeyComparator = cmp.Compare[KeyOut]
 
 	return NewProcess(config)
 }

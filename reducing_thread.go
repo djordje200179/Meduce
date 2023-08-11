@@ -2,7 +2,6 @@ package meduce
 
 import (
 	"fmt"
-	"github.com/djordje200179/extendedlibrary/misc/functions"
 	"github.com/djordje200179/extendedlibrary/misc/functions/comparison"
 	"strings"
 	"sync"
@@ -58,7 +57,7 @@ func (thread *reducingThread[KeyIn, ValueIn, KeyOut, ValueOut]) run(
 }
 
 func reducingDataGenerationThread[KeyOut, ValueOut any](
-	keyComparator functions.Comparator[KeyOut],
+	keyComparator comparison.Comparator[KeyOut],
 	mappedKeys []KeyOut, mappedValues []ValueOut,
 	readyDataPool chan<- reducingDataGroup[KeyOut, ValueOut],
 ) {

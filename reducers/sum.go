@@ -1,10 +1,10 @@
 package reducers
 
-import "golang.org/x/exp/constraints"
+import "cmp"
 
-// Sum is a reducer that returns the sum
+// SumPrimitive is a reducer that returns the sum
 // of the values passed to it.
-func SumPrimitive[KeyOut any, ValueOut constraints.Ordered](_ KeyOut, values []ValueOut) ValueOut {
+func SumPrimitive[KeyOut any, ValueOut cmp.Ordered](_ KeyOut, values []ValueOut) ValueOut {
 	var sum ValueOut
 
 	for _, value := range values {
